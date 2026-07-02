@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Permission;
 use Illuminate\Database\Seeder;
 use App\Models\Role;
 
@@ -33,6 +34,7 @@ class RoleSeeder extends Seeder
             ],
         ];
 
+        //create roles 
         foreach ($roles as $role) {
             Role::firstOrCreate(
                 ['slug' => $role['slug']],
@@ -40,6 +42,18 @@ class RoleSeeder extends Seeder
             );
         }
 
-        $this->command->info('Roles seeded successfully: SuperAdmin (level 1), Admin (level 2), User (level 3)');
+        //assign permissions to roles
+
+        // Give SuperAdmin all permissions
+        $superAdmin = Role::where('slug', 'superadmin')->first();
+        $superAdmin->permissions()->sync(Permission::pluck('id'));
+
+        // Give Admin specific permissions
+        $admin = Role::where('slug', 'admin')->first();
+        $admin->permissions()->sync(
+            Permission::where('module', '!=', 'users')->pluck('id')
+        );
+
+        $this->command->info('Roles seeded successfully: SuperAdmin (level 1), Admin (level 2), User (level 100)');
     }
 }

@@ -135,4 +135,19 @@ class User extends Authenticatable
     {
         return $this->hasRole('admin');
     }
+
+    public function permissions()
+    {
+        return $this->roles()
+            ->with('permissions')
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->unique('id');
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return $this->permissions()->where('slug', $permission)->isNotEmpty();
+    }
 }

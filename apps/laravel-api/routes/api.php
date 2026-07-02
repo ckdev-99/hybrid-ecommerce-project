@@ -18,6 +18,8 @@ $moduleRoutes = [
     app_path('Modules/Auth/Routes/auth.php'),
     app_path('Modules/Users/Routes/users.php'),
     app_path('Modules/Authorization/Routes/roles.php'),
+    app_path('Modules/Categories/Routes/categories.php'),
+    app_path('Modules/Products/Routes/products.php'),
 ];
 
 foreach ($moduleRoutes as $routeFile) {
