@@ -10,6 +10,7 @@ use App\Modules\Categories\Resources\CategoryResource;
 use App\Modules\Categories\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
