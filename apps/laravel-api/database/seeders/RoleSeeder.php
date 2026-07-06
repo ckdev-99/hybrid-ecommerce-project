@@ -41,7 +41,7 @@ class RoleSeeder extends Seeder
                 $role
             );
         }
-
+    
         //assign permissions to roles
 
         // Give SuperAdmin all permissions

@@ -20,9 +20,12 @@ Route::get('/categories/tree', [CategoryController::class, 'tree']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
 // Admin routes - Category management
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
-    Route::post('/store/categories', [CategoryController::class, 'store']);
-    Route::put('/update/categories/{category}', [CategoryController::class, 'update']);
-    Route::delete('/delete/categories/{category}', [CategoryController::class, 'destroy']);
-    Route::post('/categories/reorder', [CategoryController::class, 'reorder']);
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    // Role level check: Level 2 and above (Admin, SuperAdmin)  
+    Route::middleware('role.level:2')->group(function () {
+        Route::post('/store/categories', [CategoryController::class, 'store']);
+        Route::put('/update/categories/{category}', [CategoryController::class, 'update']);
+        Route::delete('/delete/categories/{category}', [CategoryController::class, 'destroy']);
+        Route::post('/categories/reorder', [CategoryController::class, 'reorder']);
+    });
 });
