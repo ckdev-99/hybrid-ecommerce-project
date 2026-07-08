@@ -86,6 +86,7 @@ class AuthService
      */
     public function logout(User $user): void
     {
-        $user->currentAccessToken()->delete();
+        // Delete all tokens for this user to complete logout
+        $user->tokens()->where('name', 'auth-token')->delete();
     }
 }
