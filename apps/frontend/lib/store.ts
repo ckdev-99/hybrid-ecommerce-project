@@ -39,11 +39,19 @@ export const useAuthStore = create<AuthState>()(
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
+        // Store user info for middleware role checks
+        Cookies.set('user-info', JSON.stringify(user), {
+          expires: 7,
+          path: '/',
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+        });
       },
       logout: () => {
         set({ user: null, token: null });
-        // Remove the cookie
+        // Remove the cookies
         Cookies.remove('auth-token', { path: '/' });
+        Cookies.remove('user-info', { path: '/' });
       },
       isAuthenticated: () => !!get().token,
       hasRole: (roleName) => {
