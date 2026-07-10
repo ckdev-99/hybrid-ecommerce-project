@@ -31,14 +31,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen h-[90dvh] flex flex-col lg:flex-row">
       {/* Left Side - Login Form */}
       <div className="w-full lg:w-1/2 xl:w-5/12 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#2F354F' }}>
                 <Store className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -75,7 +75,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="pl-12 h-12 border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/20"
+                    className="pl-12 h-12 border-slate-300 focus:border-slate-400 focus:ring-slate-200"
                     required
                   />
                 </div>
@@ -86,7 +86,7 @@ export default function LoginPage() {
                   <Label htmlFor="password" className="text-slate-700 font-medium text-sm">
                     Password
                   </Label>
-                  <a href="#" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                  <a href="#" className="text-sm font-medium hover:opacity-70 transition-opacity" style={{ color: '#2F354F' }}>
                     Forgot password?
                   </a>
                 </div>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-12 h-12 border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/20"
+                    className="pl-12 h-12 border-slate-300 focus:border-slate-400 focus:ring-slate-200"
                     required
                   />
                 </div>
@@ -106,7 +106,8 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-200"
+                className="w-full h-12 text-white font-medium shadow-lg hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: '#2F354F' }}
                 disabled={loading}
               >
                 {loading ? (
@@ -152,8 +153,8 @@ export default function LoginPage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center p-8 xl:p-16 h-full">
-          <div className="max-w-2xl">
+        <div className="relative z-10 flex items-center justify-center h-full p-8 xl:p-16">
+          <div className="w-full max-w-[1400px] text-center px-8">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur rounded-full border border-white/10 mb-8">
               <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -166,12 +167,12 @@ export default function LoginPage() {
                 Multi-Category Store
               </span>
             </h2>
-            <p className="text-lg text-white/70 mb-12 max-w-xl">
+            <p className="text-lg text-white/70 mb-12 max-w-2xl mx-auto">
               Complete control over electronics, fashion, home goods, automotive & more. One platform for all your ecommerce needs.
             </p>
 
             {/* Category Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-12">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
               <div className="group p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
                 <div className="flex items-center gap-4 mb-3">
                   <div className="p-3 bg-blue-400/10 rounded-xl group-hover:scale-110 transition-transform">
@@ -214,7 +215,7 @@ export default function LoginPage() {
             </div>
 
             {/* Stats Row */}
-            <div className="flex flex-wrap gap-8">
+            <div className="flex flex-wrap gap-8 justify-center">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-white">1000+</span>
                 <span className="text-white/50">Products</span>
@@ -233,10 +234,12 @@ export default function LoginPage() {
           </div>
 
           {/* Bottom Branding */}
-          <div className="absolute bottom-8 left-8 right-8 text-center">
-            <p className="text-white/30 text-sm">
-              © 2026 StoreAdmin. All rights reserved.
-            </p>
+          <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+            <div className="w-full max-w-[1400px] px-8">
+              <p className="text-white/30 text-sm text-center">
+                © 2026 StoreAdmin. All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </div>
