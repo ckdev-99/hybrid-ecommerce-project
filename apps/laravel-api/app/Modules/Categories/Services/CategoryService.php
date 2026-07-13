@@ -3,6 +3,8 @@
 namespace App\Modules\Categories\Services;
 
 use App\Models\Category;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Str;
 
 class CategoryService
@@ -13,7 +15,7 @@ class CategoryService
      * @param  bool  $includeChildren
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getAllCategories(bool $includeChildren = true): \Illuminate\Database\Eloquent\Collection
+    public function getAllCategories(bool $includeChildren = true): Collection
     {
         $query = Category::query();
 
@@ -31,7 +33,7 @@ class CategoryService
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getParentCategories(): \Illuminate\Database\Eloquent\Collection
+    public function getParentCategories(): Collection
     {
         return Category::whereNull('parent_id')
             ->with('children')
@@ -44,7 +46,7 @@ class CategoryService
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getFeaturedCategories(): \Illuminate\Database\Eloquent\Collection
+    public function getFeaturedCategories(): Collection
     {
         return Category::where('is_featured', true)
             ->where('is_active', true)
@@ -133,7 +135,7 @@ class CategoryService
      *
      * @return \Illuminate\Support\Collection
      */
-    public function getCategoryTree(): \Illuminate\Support\Collection
+    public function getCategoryTree(): SupportCollection
     {
         return Category::whereNull('parent_id')
             ->with('children.children')

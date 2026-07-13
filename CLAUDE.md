@@ -28,29 +28,27 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 **Frontend (Next.js):**
 - Login page at `/login` with beautiful UI
 - Admin layout with sidebar navigation
-- Dashboard at `/admin/dashboard` with stats cards and quick actions
+- Dashboard at `/admin/dashboard` with real-time stats from API
 - Zustand auth store with persistence
 - API client with axios and auth token injection
 - shadcn/ui components integrated
-- **NEW:** API client functions for products, categories, and users
-- **NEW:** Next.js middleware for route protection and role-based access
+- API client functions for products, categories, and users
+- Next.js proxy for route protection and role-based access
+- **NEW:** Categories management page with full CRUD
+- **NEW:** Products management page with full CRUD
+- **NEW:** Users management page with role management (SuperAdmin only)
 
-### 🚧 In Progress / Next Steps
+### 🚧 Future Enhancements
 
-**Priority 1: Complete Admin Pages**
-1. Create `/admin/categories/page.tsx` - Categories CRUD
-2. Create `/admin/products/page.tsx` - Products CRUD  
-3. Create `/admin/users/page.tsx` - Users management (SuperAdmin)
-4. Add API client functions for products, categories, users
-
-**Priority 2: Route Protection**
-1. Implement Next.js middleware for protected routes
-2. Handle auth state and redirects
-
-**Priority 3: Forms & Real Data**
-1. Product and category creation/editing forms
-2. Connect dashboard stats to real API data
-3. Loading states and error handling
+**Potential Improvements:**
+1. Add image upload functionality for products and categories
+2. Implement bulk actions (delete, activate/deactivate multiple items)
+3. Add pagination for large datasets
+4. Create advanced filters and sorting options
+5. Add export functionality (CSV, Excel)
+6. Implement audit logs for tracking changes
+7. Add email notifications for important events
+8. Create customer-facing storefront pages
 
 ## Key Files
 
@@ -84,7 +82,7 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 - `apps/frontend/lib/api/categories.ts` - Categories API functions
 - `apps/frontend/lib/api/users.ts` - Users API functions
 - `apps/frontend/lib/api/index.ts` - Central API exports
-- `apps/frontend/middleware.ts` - Route protection middleware
+- `apps/frontend/proxy.ts` - Route protection proxy (Next.js 16)
 
 **Components:**
 - `apps/frontend/components/ui/` - shadcn/ui components
@@ -156,9 +154,9 @@ await usersApi.update(1, { is_active: false });
 await usersApi.updateRoles(1, [1, 2]); // Update user roles
 ```
 
-### Middleware Protection
+### Proxy Protection
 
-The middleware automatically:
+The Next.js 16 proxy automatically:
 - Protects all `/admin/*` routes (requires authentication)
 - Redirects unauthenticated users to `/login`
 - Redirects authenticated `/login` visitors to `/admin/dashboard`

@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { LaravelResponse } from './types';
 
 export interface Role {
   id: number;
@@ -17,6 +18,7 @@ export interface User {
   phone?: string;
   avatar_url?: string;
   is_active: boolean;
+  status?: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
@@ -40,86 +42,92 @@ export interface UserFormData {
   phone?: string;
   is_active?: boolean;
   roles?: number[]; // role IDs
+  status?: string;
 }
 
-export interface UserListResponse {
-  data: User[];
-  meta?: {
+export interface UsersData {
+  users: User[];
+  pagination?: {
+    total: number;
+    per_page: number;
     current_page: number;
     last_page: number;
-    per_page: number;
-    total: number;
   };
+}
+
+export interface UserData {
+  user: User;
 }
 
 export const usersApi = {
   /**
-   * Get all users (Admin only)
+   * Get all users (matches Laravel index())
+   * GET /api/users
    */
-  getAll: async (params?: {
+  index: async (params?: {
     search?: string;
     role?: string;
     is_active?: boolean;
-    page?: number;
     per_page?: number;
   }) => {
-    const response = await api.get<UserListResponse>('/users', { params });
-    return response.data;
+    const response = await api.get<LaravelResponse<UsersData>>('/users', { params });
+    return response.data.data;
   },
 
   /**
-   * Get a single user by ID (Admin only)
+   * Get a single user (matches Laravel show())
+   * GET /api/users/{id}
    */
-  getById: async (id: number) => {
-    const response = await api.get<User>(`/users/${id}`);
-    return response.data;
+  show: async (id: number) => {
+    const response = await api.get<LaravelResponse<UserData>>(`/users/${id}`);
+    return response.data.data.user;
   },
 
   /**
-   * Create a new user (SuperAdmin only)
+   * Update user status (matches Laravel updateStatus())
+   * PUT /api/admin/users/{id}/status
    */
-  create: async (data: UserFormData) => {
-    const response = await api.post<User>('/admin/users', data);
-    return response.data;
+  updateStatus: async (id: number, status: 'active' | 'inactive' | 'banned') => {
+    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/status`, { status });
+    return response.data.data.user;
   },
 
-  /**
-   * Update a user (Admin only)
-   */
-  update: async (id: number, data: Partial<UserFormData>) => {
-    const response = await api.put<User>(`/admin/users/${id}`, data);
-    return response.data;
-  },
+  // Note: These methods may not be implemented in your Laravel backend yet
+  // Uncomment when backend endpoints are available:
 
   /**
-   * Delete a user (SuperAdmin only)
+   * Create a new user (would match Laravel store())
+   * POST /api/admin/users
    */
-  delete: async (id: number) => {
-    const response = await api.delete(`/admin/users/${id}`);
-    return response.data;
-  },
+  // store: async (data: UserFormData) => {
+  //   const response = await api.post<LaravelResponse<UserData>>('/admin/users', data);
+  //   return response.data.data.user;
+  // },
 
   /**
-   * Update user roles (SuperAdmin only)
+   * Update a user (would match Laravel update())
+   * PUT /api/admin/users/{id}
    */
-  updateRoles: async (id: number, roleIds: number[]) => {
-    const response = await api.put<User>(`/admin/users/${id}/roles`, { roles: roleIds });
-    return response.data;
-  },
+  // update: async (id: number, data: Partial<UserFormData>) => {
+  //   const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}`, data);
+  //   return response.data.data.user;
+  // },
 
   /**
-   * Toggle user active status (Admin only)
+   * Delete a user (would match Laravel destroy())
+   * DELETE /api/admin/users/{id}
    */
-  toggleActive: async (id: number, isActive: boolean) => {
-    const response = await api.put<User>(`/admin/users/${id}/status`, { is_active: isActive });
-    return response.data;
-  },
+  // destroy: async (id: number) => {
+  //   const response = await api.delete<LaravelResponse<void>>(`/admin/users/${id}`);
+  //   return response.data;
+  // },
 
   /**
-   * Get user count for dashboard stats
+   * Update user roles
+   * PUT /api/admin/users/{id}/roles
    */
-  getCount: async () => {
-    const response = await api.get<{ count: number }>('/users/stats');
-    return response.data.count;
-  },
+  // updateRoles: async (id: number, roleIds: number[]) => {
+  //   const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/roles`, { roles: roleIds });
+  //   return response.data.data.user;
+  // },
 };

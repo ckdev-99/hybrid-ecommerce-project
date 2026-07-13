@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { LaravelResponse } from './types';
 
 export interface Product {
   id: number;
@@ -18,6 +19,7 @@ export interface Product {
   depth?: number;
   is_virtual: boolean;
   is_active: boolean;
+  is_featured?: boolean;
   category_id?: number;
   brand_id?: number;
   meta_title?: string;
@@ -40,7 +42,15 @@ export interface Product {
     url: string;
     alt?: string;
     position: number;
+    is_primary: boolean;
   }[];
+  primaryImage?: {
+    id: number;
+    url: string;
+    alt?: string;
+    position: number;
+    is_primary: boolean;
+  };
 }
 
 export interface ProductFormData {
@@ -60,6 +70,7 @@ export interface ProductFormData {
   depth?: number;
   is_virtual?: boolean;
   is_active?: boolean;
+  is_featured?: boolean;
   category_id?: number;
   brand_id?: number;
   meta_title?: string;
@@ -67,84 +78,92 @@ export interface ProductFormData {
   meta_keywords?: string;
 }
 
-export interface ProductListResponse {
-  data: Product[];
-  meta?: {
+export interface ProductsData {
+  products: Product[];
+  pagination?: {
+    total: number;
+    per_page: number;
     current_page: number;
     last_page: number;
-    per_page: number;
-    total: number;
   };
+}
+
+export interface ProductData {
+  product: Product;
 }
 
 export const productsApi = {
   /**
-   * Get all products with optional filtering
+   * Get all products (matches Laravel index())
+   * GET /api/products
    */
-  getAll: async (params?: {
+  index: async (params?: {
     category_id?: number;
     search?: string;
-    sort?: string;
-    page?: number;
+    is_active?: boolean;
+    is_featured?: boolean;
+    min_price?: number;
+    max_price?: number;
+    in_stock?: boolean;
+    sort_by?: string;
+    sort_order?: string;
     per_page?: number;
   }) => {
-    const response = await api.get<ProductListResponse>('/products', { params });
-    return response.data;
+    const response = await api.get<LaravelResponse<ProductsData>>('/products', { params });
+    return response.data.data;
   },
 
   /**
-   * Get featured products
+   * Get featured products (matches Laravel featured())
+   * GET /api/products/featured
    */
-  getFeatured: async () => {
-    const response = await api.get<Product[]>('/products/featured');
-    return response.data;
+  featured: async (params?: { limit?: number }) => {
+    const response = await api.get<LaravelResponse<ProductsData>>('/products/featured', { params });
+    return response.data.data.products;
   },
 
   /**
-   * Get a single product by ID
+   * Get a single product (matches Laravel show())
+   * GET /api/products/{id}
    */
-  getById: async (id: number) => {
-    const response = await api.get<Product>(`/products/${id}`);
-    return response.data;
+  show: async (id: number) => {
+    const response = await api.get<LaravelResponse<ProductData>>(`/products/${id}`);
+    return response.data.data.product;
   },
 
   /**
-   * Create a new product (Admin only)
+   * Create a new product (matches Laravel store())
+   * POST /api/admin/products
    */
-  create: async (data: ProductFormData) => {
-    const response = await api.post<Product>('/admin/products', data);
-    return response.data;
+  store: async (data: ProductFormData) => {
+    const response = await api.post<LaravelResponse<ProductData>>('/admin/products', data);
+    return response.data.data.product;
   },
 
   /**
-   * Update a product (Admin only)
+   * Update a product (matches Laravel update())
+   * PUT /api/admin/products/{id}
    */
   update: async (id: number, data: Partial<ProductFormData>) => {
-    const response = await api.put<Product>(`/admin/products/${id}`, data);
-    return response.data;
+    const response = await api.put<LaravelResponse<ProductData>>(`/admin/products/${id}`, data);
+    return response.data.data.product;
   },
 
   /**
-   * Delete a product (Admin only)
+   * Delete a product (matches Laravel destroy())
+   * DELETE /api/admin/products/{id}
    */
-  delete: async (id: number) => {
-    const response = await api.delete(`/admin/products/${id}`);
+  destroy: async (id: number) => {
+    const response = await api.delete<LaravelResponse<void>>(`/admin/products/${id}`);
     return response.data;
   },
 
   /**
-   * Update product stock (Admin only)
+   * Update product stock (matches Laravel updateStock())
+   * PUT /api/admin/products/{id}/stock
    */
   updateStock: async (id: number, quantity: number) => {
-    const response = await api.put<Product>(`/admin/products/${id}/stock`, { quantity });
-    return response.data;
-  },
-
-  /**
-   * Get product count for dashboard stats
-   */
-  getCount: async () => {
-    const response = await api.get<{ count: number }>('/products/stats');
-    return response.data.count;
+    const response = await api.put<LaravelResponse<ProductData>>(`/admin/products/${id}/stock`, { quantity });
+    return response.data.data.product;
   },
 };
