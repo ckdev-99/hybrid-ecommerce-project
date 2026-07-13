@@ -4,13 +4,11 @@ namespace App\Modules\Categories\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Modules\Categories\Requests\CreateCategoryRequest;
-use App\Modules\Categories\Requests\UpdateCategoryRequest;
+use App\Modules\Categories\Requests\{CreateCategoryRequest, UpdateCategoryRequest};
 use App\Modules\Categories\Resources\CategoryResource;
 use App\Modules\Categories\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {

@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { LaravelResponse } from './types';
 
 export interface Category {
   id: number;
@@ -7,6 +8,7 @@ export interface Category {
   description?: string;
   parent_id?: number;
   position: number;
+  sort_order?: number;
   is_active: boolean;
   is_featured: boolean;
   meta_title?: string;
@@ -25,6 +27,7 @@ export interface CategoryFormData {
   description?: string;
   parent_id?: number;
   position?: number;
+  sort_order?: number;
   is_active?: boolean;
   is_featured?: boolean;
   meta_title?: string;
@@ -32,92 +35,98 @@ export interface CategoryFormData {
   image_url?: string;
 }
 
-export interface CategoryTreeResponse {
-  data: Category[];
+export interface CategoriesData {
+  categories: Category[];
+}
+
+export interface CategoryData {
+  category: Category;
 }
 
 export const categoriesApi = {
   /**
-   * Get all categories
+   * Get all categories (matches Laravel index())
+   * GET /api/categories
    */
-  getAll: async (params?: {
+  index: async (params?: {
+    include_children?: boolean;
     search?: string;
     parent_id?: number;
     is_active?: boolean;
   }) => {
-    const response = await api.get<{ data: Category[] }>('/categories', { params });
-    return response.data;
+    const response = await api.get<LaravelResponse<CategoriesData>>('/categories', { params });
+    return response.data.data.categories;
   },
 
   /**
-   * Get parent categories only
+   * Get parent categories only (matches Laravel parents())
+   * GET /api/categories/parents
    */
-  getParents: async () => {
-    const response = await api.get<{ data: Category[] }>('/categories/parents');
-    return response.data;
+  parents: async () => {
+    const response = await api.get<LaravelResponse<CategoriesData>>('/categories/parents');
+    return response.data.data.categories;
   },
 
   /**
-   * Get featured categories
+   * Get featured categories (matches Laravel featured())
+   * GET /api/categories/featured
    */
-  getFeatured: async () => {
-    const response = await api.get<{ data: Category[] }>('/categories/featured');
-    return response.data;
+  featured: async () => {
+    const response = await api.get<LaravelResponse<CategoriesData>>('/categories/featured');
+    return response.data.data.categories;
   },
 
   /**
-   * Get category tree structure
+   * Get category tree (matches Laravel tree())
+   * GET /api/categories/tree
    */
-  getTree: async () => {
-    const response = await api.get<CategoryTreeResponse>('/categories/tree');
-    return response.data;
+  tree: async () => {
+    const response = await api.get<LaravelResponse<CategoriesData>>('/categories/tree');
+    return response.data.data.categories;
   },
 
   /**
-   * Get a single category by ID
+   * Get a single category (matches Laravel show())
+   * GET /api/categories/{id}
    */
-  getById: async (id: number) => {
-    const response = await api.get<Category>(`/categories/${id}`);
-    return response.data;
+  show: async (id: number) => {
+    const response = await api.get<LaravelResponse<CategoryData>>(`/categories/${id}`);
+    return response.data.data.category;
   },
 
   /**
-   * Create a new category (Admin only)
+   * Create a new category (matches Laravel store())
+   * POST /api/admin/store/categories
    */
-  create: async (data: CategoryFormData) => {
-    const response = await api.post<Category>('/admin/store/categories', data);
-    return response.data;
+  store: async (data: CategoryFormData) => {
+    const response = await api.post<LaravelResponse<CategoryData>>('/admin/store/categories', data);
+    return response.data.data.category;
   },
 
   /**
-   * Update a category (Admin only)
+   * Update a category (matches Laravel update())
+   * PUT /api/admin/update/categories/{id}
    */
   update: async (id: number, data: Partial<CategoryFormData>) => {
-    const response = await api.put<Category>(`/admin/update/categories/${id}`, data);
+    const response = await api.put<LaravelResponse<CategoryData>>(`/admin/update/categories/${id}`, data);
+    return response.data.data.category;
+  },
+
+  /**
+   * Delete a category (matches Laravel destroy())
+   * DELETE /api/admin/delete/categories/{id}
+   */
+  destroy: async (id: number) => {
+    const response = await api.delete<LaravelResponse<void>>(`/admin/delete/categories/${id}`);
     return response.data;
   },
 
   /**
-   * Delete a category (Admin only)
+   * Reorder categories (matches Laravel reorder())
+   * POST /api/admin/categories/reorder
    */
-  delete: async (id: number) => {
-    const response = await api.delete(`/admin/delete/categories/${id}`);
+  reorder: async (categories: Array<{ id: number; sort_order: number }>) => {
+    const response = await api.post<LaravelResponse<void>>('/admin/categories/reorder', { categories });
     return response.data;
-  },
-
-  /**
-   * Reorder categories (Admin only)
-   */
-  reorder: async (categories: Array<{ id: number; position: number }>) => {
-    const response = await api.post('/admin/categories/reorder', { categories });
-    return response.data;
-  },
-
-  /**
-   * Get category count for dashboard stats
-   */
-  getCount: async () => {
-    const response = await api.get<{ count: number }>('/categories/stats');
-    return response.data.count;
   },
 };

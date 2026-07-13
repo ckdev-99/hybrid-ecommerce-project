@@ -109,9 +109,18 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
-        </DialogPrimitive.Close>
+        <DialogPrimitive.Close
+          render={
+            <button
+              type="button"
+              className={cn(
+                "inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-background px-2.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none select-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              )}
+            >
+              Close
+            </button>
+          }
+        />
       )}
     </div>
   )

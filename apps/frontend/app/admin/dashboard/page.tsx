@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store';
+import { productsApi, categoriesApi, usersApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Package,
@@ -11,39 +13,17 @@ import {
   Activity,
   ArrowRight,
   Store,
+  Loader2,
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-
-  // TODO: Fetch actual counts from API
-  const stats = [
-    {
-      title: 'Total Products',
-      value: '0',
-      change: '+0%',
-      icon: Package,
-      color: 'blue',
-      href: '/admin/products',
-    },
-    {
-      title: 'Categories',
-      value: '0',
-      change: '+0%',
-      icon: FolderTree,
-      color: 'emerald',
-      href: '/admin/categories',
-    },
-    {
-      title: 'Total Users',
-      value: '0',
-      change: '+0%',
-      icon: Users,
-      color: 'violet',
-      href: '/admin/users',
-      superAdminOnly: true,
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    products: { count: 0, change: '+0%' },
+    categories: { count: 0, change: '+0%' },
+    users: { count: 0, change: '+0%' },
+  });
 
   const recentActivity = [
     { action: 'System initialized', time: 'Just now', type: 'info' },
@@ -83,6 +63,64 @@ export default function DashboardPage() {
     },
   };
 
+  // Fetch stats on mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const [productsRes, categoriesRes, usersRes] = await Promise.allSettled([
+          productsApi.getAll(),
+          categoriesApi.getAll(),
+          usersApi.getAll(),
+        ]);
+
+        const productCount = productsRes.status === 'fulfilled' ? (productsRes.value.data?.length || 0) : 0;
+        const categoryCount = categoriesRes.status === 'fulfilled' ? (categoriesRes.value.data?.length || 0) : 0;
+        const userCount = usersRes.status === 'fulfilled' ? (usersRes.value.data?.length || 0) : 0;
+
+        setStats({
+          products: { count: productCount, change: productCount > 0 ? '+100%' : '+0%' },
+          categories: { count: categoryCount, change: categoryCount > 0 ? '+100%' : '+0%' },
+          users: { count: userCount, change: userCount > 0 ? '+100%' : '+0%' },
+        });
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const statsData = [
+    {
+      title: 'Total Products',
+      value: loading ? '...' : stats.products.count.toString(),
+      change: stats.products.change,
+      icon: Package,
+      color: 'blue',
+      href: '/admin/products',
+    },
+    {
+      title: 'Categories',
+      value: loading ? '...' : stats.categories.count.toString(),
+      change: stats.categories.change,
+      icon: FolderTree,
+      color: 'emerald',
+      href: '/admin/categories',
+    },
+    {
+      title: 'Total Users',
+      value: loading ? '...' : stats.users.count.toString(),
+      change: stats.users.change,
+      icon: Users,
+      color: 'violet',
+      href: '/admin/users',
+      superAdminOnly: true,
+    },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -102,8 +140,8 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats
-          .filter(stat => !stat.superAdminOnly || user?.roles?.some(r => r.name === 'SuperAdmin'))
+        {statsData
+          .filter((stat) => !stat.superAdminOnly || user?.roles?.some((r) => r.name === 'SuperAdmin'))
           .map((stat) => {
             const Icon = stat.icon;
             const colors = colorClasses[stat.color as keyof typeof colorClasses];
@@ -114,12 +152,20 @@ export default function DashboardPage() {
                 href={stat.href}
                 className="group"
               >
-                <Card className={`transition-all duration-200 hover:shadow-lg ${colors.hoverBorder}`}>
+                <Card
+                  className={`transition-all duration-200 hover:shadow-lg ${colors.hoverBorder}`}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                        <p className="text-3xl font-bold text-slate-900 mt-2">{stat.value}</p>
+                        <p className="text-3xl font-bold text-slate-900 mt-2">
+                          {loading ? (
+                            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                          ) : (
+                            stat.value
+                          )}
+                        </p>
                         <div className="flex items-center gap-2 mt-3">
                           <span className={`text-sm font-medium ${colors.text}`}>
                             {stat.change}
@@ -127,11 +173,15 @@ export default function DashboardPage() {
                           <span className="text-xs text-slate-500">from last month</span>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-lg ${colors.iconBg} ${colors.border} border`}>
+                      <div
+                        className={`p-3 rounded-lg ${colors.iconBg} ${colors.border} border`}
+                      >
                         <Icon className={`h-6 w-6 ${colors.text}`} />
                       </div>
                     </div>
-                    <div className={`flex items-center gap-2 mt-4 text-sm ${colors.text} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    <div
+                      className={`flex items-center gap-2 mt-4 text-sm ${colors.text} opacity-0 group-hover:opacity-100 transition-opacity`}
+                    >
                       <span>View details</span>
                       <ArrowRight className="h-4 w-4" />
                     </div>
@@ -150,7 +200,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {quickActions
-              .filter(action => action.title !== 'Manage Users' || user?.roles?.some(r => r.name === 'SuperAdmin'))
+              .filter(
+                (action) => action.title !== 'Manage Users' ||
+                  user?.roles?.some((r) => r.name === 'SuperAdmin')
+              )
               .map((action) => {
                 const Icon = action.icon;
                 const colors = colorClasses[action.color as keyof typeof colorClasses];
@@ -165,7 +218,9 @@ export default function DashboardPage() {
                       <Icon className={`h-5 w-5 ${colors.text}`} />
                     </div>
                     <div className="flex-1 font-medium text-slate-700">{action.title}</div>
-                    <ArrowRight className={`h-5 w-5 ${colors.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <ArrowRight
+                      className={`h-5 w-5 ${colors.text} opacity-0 group-hover:opacity-100 transition-opacity`}
+                    />
                   </a>
                 );
               })}
@@ -199,14 +254,20 @@ export default function DashboardPage() {
       </div>
 
       {/* Getting Started Card */}
-      <Card className="border-0 text-white shadow-xl" style={{ background: 'linear-gradient(135deg, #2F354F 0%, #282D43 50%, #22273A 100%)' }}>
+      <Card
+        className="border-0 text-white shadow-xl"
+        style={{
+          background:
+            'linear-gradient(135deg, #2F354F 0%, #282D43 50%, #22273A 100%)',
+        }}
+      >
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-semibold mb-2">Getting Started</h3>
               <p className="text-white/70 mb-4 max-w-2xl">
-                Welcome to your admin panel! Start by creating categories to organize your products,
-                then add your products to begin selling.
+                Welcome to your admin panel! Start by creating categories to organize your
+                products, then add your products to begin selling.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
