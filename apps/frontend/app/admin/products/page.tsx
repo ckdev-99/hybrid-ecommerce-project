@@ -65,14 +65,14 @@ export default function ProductsPage() {
     cost_price: 0,
     sku: '',
     barcode: '',
-    track_quantity: true,
+    track_quantity: undefined,
     quantity: 0,
     weight: 0,
     width: 0,
     height: 0,
     depth: 0,
-    is_virtual: false,
-    is_active: true,
+    is_virtual: undefined,
+    is_active: undefined,
     category_id: undefined,
     brand_id: undefined,
     meta_title: '',
@@ -122,14 +122,14 @@ export default function ProductsPage() {
       cost_price: 0,
       sku: '',
       barcode: '',
-      track_quantity: true,
+      track_quantity: undefined,
       quantity: 0,
       weight: 0,
       width: 0,
       height: 0,
       depth: 0,
-      is_virtual: false,
-      is_active: true,
+      is_virtual: undefined,
+      is_active: undefined,
       category_id: undefined,
       brand_id: undefined,
       meta_title: '',
@@ -406,13 +406,15 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-track">Track Quantity</Label>
                     <Select
-                      value={formData.track_quantity ? 'true' : 'false'}
+                      value={formData.track_quantity === true ? 'true' : formData.track_quantity === false ? 'false' : undefined}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, track_quantity: value === 'true' })
+                        setFormData({ ...formData, track_quantity: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
                     >
                       <SelectTrigger id="create-track">
-                        <SelectValue />
+                        <SelectValue placeholder="Select">
+                          {formData.track_quantity === true ? 'Yes' : formData.track_quantity === false ? 'No' : 'Select'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="true">Yes</SelectItem>
@@ -469,13 +471,15 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-virtual">Virtual Product</Label>
                     <Select
-                      value={formData.is_virtual ? 'true' : 'false'}
+                      value={formData.is_virtual === true ? 'true' : formData.is_virtual === false ? 'false' : undefined}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, is_virtual: value === 'true' })
+                        setFormData({ ...formData, is_virtual: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
                     >
                       <SelectTrigger id="create-virtual">
-                        <SelectValue />
+                        <SelectValue placeholder="Select">
+                          {formData.is_virtual === true ? 'Yes (Digital)' : formData.is_virtual === false ? 'No (Physical)' : 'Select'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="false">No (Physical)</SelectItem>
@@ -487,13 +491,15 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-active">Status</Label>
                     <Select
-                      value={formData.is_active ? 'true' : 'false'}
+                      value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, is_active: value === 'true' })
+                        setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
                     >
                       <SelectTrigger id="create-active">
-                        <SelectValue />
+                        <SelectValue placeholder="Select">
+                          {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="true">Active</SelectItem>
@@ -810,13 +816,15 @@ export default function ProductsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-track">Track Quantity</Label>
                   <Select
-                    value={formData.track_quantity ? 'true' : 'false'}
+                    value={formData.track_quantity === true ? 'true' : formData.track_quantity === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, track_quantity: value === 'true' })
+                      setFormData({ ...formData, track_quantity: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="edit-track">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.track_quantity === true ? 'Yes' : formData.track_quantity === false ? 'No' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Yes</SelectItem>
@@ -873,13 +881,15 @@ export default function ProductsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-virtual">Virtual Product</Label>
                   <Select
-                    value={formData.is_virtual ? 'true' : 'false'}
+                    value={formData.is_virtual === true ? 'true' : formData.is_virtual === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, is_virtual: value === 'true' })
+                      setFormData({ ...formData, is_virtual: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="edit-virtual">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.is_virtual === true ? 'Yes (Digital)' : formData.is_virtual === false ? 'No (Physical)' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="false">No (Physical)</SelectItem>
@@ -891,13 +901,15 @@ export default function ProductsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-active">Status</Label>
                   <Select
-                    value={formData.is_active ? 'true' : 'false'}
+                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, is_active: value === 'true' })
+                      setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="edit-active">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Active</SelectItem>

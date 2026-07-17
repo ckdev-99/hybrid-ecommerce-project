@@ -60,9 +60,9 @@ export default function CategoriesPage() {
     slug: '',
     description: '',
     parent_id: undefined,
-    position: 0,
-    is_active: true,
-    is_featured: false,
+    sort_order: 0,
+    is_active: undefined,
+    is_featured: undefined,
   });
 
   const fetchCategories = async () => {
@@ -101,9 +101,9 @@ export default function CategoriesPage() {
       slug: '',
       description: '',
       parent_id: undefined,
-      position: 0,
-      is_active: true,
-      is_featured: false,
+      sort_order: 0,
+      is_active: undefined,
+      is_featured: undefined,
     });
   };
 
@@ -175,7 +175,7 @@ export default function CategoriesPage() {
       slug: category.slug,
       description: category.description || '',
       parent_id: category.parent_id,
-      position: category.position,
+      sort_order: category.sort_order,
       is_active: category.is_active,
       is_featured: category.is_featured,
     });
@@ -283,13 +283,13 @@ export default function CategoriesPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="create-position">Position</Label>
+                    <Label htmlFor="create-position">Sort Order</Label>
                     <Input
                       id="create-position"
                       type="number"
-                      value={formData.position}
+                      value={formData.sort_order}
                       onChange={(e) =>
-                        setFormData({ ...formData, position: parseInt(e.target.value) || 0 })
+                        setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })
                       }
                       min="0"
                     />
@@ -298,13 +298,15 @@ export default function CategoriesPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-featured">Featured</Label>
                     <Select
-                      value={formData.is_featured ? 'true' : 'false'}
+                      value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : undefined}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, is_featured: value === 'true' })
+                        setFormData({ ...formData, is_featured: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
                     >
                       <SelectTrigger id="create-featured">
-                        <SelectValue />
+                        <SelectValue placeholder="Select">
+                          {formData.is_featured === true ? 'Yes' : formData.is_featured === false ? 'No' : 'Select'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="false">No</SelectItem>
@@ -317,13 +319,15 @@ export default function CategoriesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="create-active">Status</Label>
                   <Select
-                    value={formData.is_active ? 'true' : 'false'}
+                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, is_active: value === 'true' })
+                      setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="create-active">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Active</SelectItem>
@@ -411,7 +415,7 @@ export default function CategoriesPage() {
                     <TableHead>Parent</TableHead>
                     <TableHead>Products</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Position</TableHead>
+                    <TableHead>Sort Order</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -453,7 +457,7 @@ export default function CategoriesPage() {
                           {category.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-600">{category.position}</TableCell>
+                      <TableCell className="text-slate-600">{category.sort_order}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -552,13 +556,13 @@ export default function CategoriesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-position">Position</Label>
+                  <Label htmlFor="edit-position">Sort Order</Label>
                   <Input
                     id="edit-position"
                     type="number"
-                    value={formData.position}
+                    value={formData.sort_order}
                     onChange={(e) =>
-                      setFormData({ ...formData, position: parseInt(e.target.value) || 0 })
+                      setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })
                     }
                     min="0"
                   />
@@ -567,13 +571,15 @@ export default function CategoriesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-featured">Featured</Label>
                   <Select
-                    value={formData.is_featured ? 'true' : 'false'}
+                    value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, is_featured: value === 'true' })
+                      setFormData({ ...formData, is_featured: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="edit-featured">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.is_featured === true ? 'Yes' : formData.is_featured === false ? 'No' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="false">No</SelectItem>
@@ -586,13 +592,15 @@ export default function CategoriesPage() {
               <div className="space-y-2">
                 <Label htmlFor="edit-active">Status</Label>
                 <Select
-                  value={formData.is_active ? 'true' : 'false'}
+                  value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, is_active: value === 'true' })
+                    setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                   }
                 >
                   <SelectTrigger id="edit-active">
-                    <SelectValue />
+                    <SelectValue placeholder="Select">
+                      {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="true">Active</SelectItem>

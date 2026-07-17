@@ -7,8 +7,7 @@ export interface Category {
   slug: string;
   description?: string;
   parent_id?: number;
-  position: number;
-  sort_order?: number;
+  sort_order: number;
   is_active: boolean;
   is_featured: boolean;
   meta_title?: string;
@@ -26,7 +25,6 @@ export interface CategoryFormData {
   slug?: string;
   description?: string;
   parent_id?: number;
-  position?: number;
   sort_order?: number;
   is_active?: boolean;
   is_featured?: boolean;
@@ -98,9 +96,17 @@ export const categoriesApi = {
    * Create a new category (matches Laravel store())
    * POST /api/admin/store/categories
    */
-  store: async (data: CategoryFormData) => {
+  create: async (data: CategoryFormData) => {
     const response = await api.post<LaravelResponse<CategoryData>>('/admin/store/categories', data);
     return response.data.data.category;
+  },
+
+  /**
+   * Store a new category (alias for create, matches Laravel store())
+   * POST /api/admin/store/categories
+   */
+  store: async (data: CategoryFormData) => {
+    return categoriesApi.create(data);
   },
 
   /**
@@ -116,9 +122,17 @@ export const categoriesApi = {
    * Delete a category (matches Laravel destroy())
    * DELETE /api/admin/delete/categories/{id}
    */
-  destroy: async (id: number) => {
+  delete: async (id: number) => {
     const response = await api.delete<LaravelResponse<void>>(`/admin/delete/categories/${id}`);
     return response.data;
+  },
+
+  /**
+   * Destroy a category (alias for delete, matches Laravel destroy())   
+   * DELETE /api/admin/delete/categories/{id}
+   */
+  destroy: async (id: number) => {
+    return categoriesApi.delete(id);
   },
 
   /**

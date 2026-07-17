@@ -64,7 +64,7 @@ export const usersApi = {
    * Get all users (matches Laravel index())
    * GET /api/users
    */
-  index: async (params?: {
+  getAll: async (params?: {
     search?: string;
     role?: string;
     is_active?: boolean;
@@ -72,6 +72,19 @@ export const usersApi = {
   }) => {
     const response = await api.get<LaravelResponse<UsersData>>('/users', { params });
     return response.data.data;
+  },
+
+  /**
+   * Get all users (alias for getAll, matches Laravel index())
+   * GET /api/users
+   */
+  index: async (params?: {
+    search?: string;
+    role?: string;
+    is_active?: boolean;
+    per_page?: number;
+  }) => {
+    return usersApi.getAll(params);
   },
 
   /**
@@ -84,6 +97,14 @@ export const usersApi = {
   },
 
   /**
+   * Get a single user (alias for show)
+   * GET /api/users/{id}
+   */
+  getById: async (id: number) => {
+    return usersApi.show(id);
+  },
+
+  /**
    * Update user status (matches Laravel updateStatus())
    * PUT /api/admin/users/{id}/status
    */
@@ -92,42 +113,63 @@ export const usersApi = {
     return response.data.data.user;
   },
 
-  // Note: These methods may not be implemented in your Laravel backend yet
-  // Uncomment when backend endpoints are available:
+  /**
+   * Toggle user active status (convenience method)
+   * PUT /api/admin/users/{id}/status
+   */
+  toggleActive: async (id: number, isActive: boolean) => {
+    return usersApi.updateStatus(id, isActive ? 'active' : 'inactive');
+  },
 
   /**
-   * Create a new user (would match Laravel store())
+   * Create a new user (matches Laravel store())
    * POST /api/admin/users
    */
-  // store: async (data: UserFormData) => {
-  //   const response = await api.post<LaravelResponse<UserData>>('/admin/users', data);
-  //   return response.data.data.user;
-  // },
+  create: async (data: UserFormData) => {
+    const response = await api.post<LaravelResponse<UserData>>('/admin/users', data);
+    return response.data.data.user;
+  },
 
   /**
-   * Update a user (would match Laravel update())
+   * Store a new user (alias for create, matches Laravel store())
+   * POST /api/admin/users
+   */
+  store: async (data: UserFormData) => {
+    return usersApi.create(data);
+  },
+
+  /**
+   * Update a user (matches Laravel update())
    * PUT /api/admin/users/{id}
    */
-  // update: async (id: number, data: Partial<UserFormData>) => {
-  //   const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}`, data);
-  //   return response.data.data.user;
-  // },
+  update: async (id: number, data: Partial<UserFormData>) => {
+    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}`, data);
+    return response.data.data.user;
+  },
 
   /**
-   * Delete a user (would match Laravel destroy())
+   * Delete a user (matches Laravel destroy())
    * DELETE /api/admin/users/{id}
    */
-  // destroy: async (id: number) => {
-  //   const response = await api.delete<LaravelResponse<void>>(`/admin/users/${id}`);
-  //   return response.data;
-  // },
+  delete: async (id: number) => {
+    const response = await api.delete<LaravelResponse<void>>(`/admin/users/${id}`);
+    return response.data;
+  },
 
   /**
-   * Update user roles
+   * Destroy a user (alias for delete, matches Laravel destroy())
+   * DELETE /api/admin/users/{id}
+   */
+  destroy: async (id: number) => {
+    return usersApi.delete(id);
+  },
+
+  /**
+   * Update user roles (matches Laravel updateRoles())
    * PUT /api/admin/users/{id}/roles
    */
-  // updateRoles: async (id: number, roleIds: number[]) => {
-  //   const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/roles`, { roles: roleIds });
-  //   return response.data.data.user;
-  // },
+  updateRoles: async (id: number, roleIds: number[]) => {
+    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/roles`, { roles: roleIds });
+    return response.data.data.user;
+  },
 };
