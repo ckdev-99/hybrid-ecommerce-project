@@ -65,7 +65,7 @@ export default function UsersPage() {
     email: '',
     password: '',
     phone: '',
-    is_active: true,
+    is_active: undefined,
     roles: [],
   });
 
@@ -100,7 +100,7 @@ export default function UsersPage() {
       email: '',
       password: '',
       phone: '',
-      is_active: true,
+      is_active: undefined,
       roles: [],
     });
   };
@@ -358,13 +358,15 @@ export default function UsersPage() {
                 <div className="space-y-2">
                   <Label htmlFor="create-active">Status</Label>
                   <Select
-                    value={formData.is_active ? 'true' : 'false'}
+                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, is_active: value === 'true' })
+                      setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
                   >
                     <SelectTrigger id="create-active">
-                      <SelectValue />
+                      <SelectValue placeholder="Select">
+                        {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Active</SelectItem>
@@ -611,13 +613,15 @@ export default function UsersPage() {
               <div className="space-y-2">
                 <Label htmlFor="edit-active">Status</Label>
                 <Select
-                  value={formData.is_active ? 'true' : 'false'}
+                  value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, is_active: value === 'true' })
+                    setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                   }
                 >
                   <SelectTrigger id="edit-active">
-                    <SelectValue />
+                    <SelectValue placeholder="Select">
+                      {formData.is_active === true ? 'Active' : formData.is_active === false ? 'Inactive' : 'Select'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="true">Active</SelectItem>

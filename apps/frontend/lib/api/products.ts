@@ -97,7 +97,7 @@ export const productsApi = {
    * Get all products (matches Laravel index())
    * GET /api/products
    */
-  index: async (params?: {
+  getAll: async (params?: {
     category_id?: number;
     search?: string;
     is_active?: boolean;
@@ -111,6 +111,25 @@ export const productsApi = {
   }) => {
     const response = await api.get<LaravelResponse<ProductsData>>('/products', { params });
     return response.data.data;
+  },
+
+  /**
+   * Get all products (alias for getAll, matches Laravel index())
+   * GET /api/products
+   */
+  index: async (params?: {
+    category_id?: number;
+    search?: string;
+    is_active?: boolean;
+    is_featured?: boolean;
+    min_price?: number;
+    max_price?: number;
+    in_stock?: boolean;
+    sort_by?: string;
+    sort_order?: string;
+    per_page?: number;
+  }) => {
+    return productsApi.getAll(params);
   },
 
   /**
@@ -132,12 +151,28 @@ export const productsApi = {
   },
 
   /**
+   * Get a single product (alias for show)
+   * GET /api/products/{id}
+   */
+  getById: async (id: number) => {
+    return productsApi.show(id);
+  },
+
+  /**
    * Create a new product (matches Laravel store())
    * POST /api/admin/products
    */
-  store: async (data: ProductFormData) => {
+  create: async (data: ProductFormData) => {
     const response = await api.post<LaravelResponse<ProductData>>('/admin/products', data);
     return response.data.data.product;
+  },
+
+  /**
+   * Store a new product (alias for create, matches Laravel store())
+   * POST /api/admin/products
+   */
+  store: async (data: ProductFormData) => {
+    return productsApi.create(data);
   },
 
   /**
@@ -153,9 +188,17 @@ export const productsApi = {
    * Delete a product (matches Laravel destroy())
    * DELETE /api/admin/products/{id}
    */
-  destroy: async (id: number) => {
+  delete: async (id: number) => {
     const response = await api.delete<LaravelResponse<void>>(`/admin/products/${id}`);
     return response.data;
+  },
+
+  /**
+   * Destroy a product (alias for delete, matches Laravel destroy())
+   * DELETE /api/admin/products/{id}
+   */
+  destroy: async (id: number) => {
+    return productsApi.delete(id);
   },
 
   /**
