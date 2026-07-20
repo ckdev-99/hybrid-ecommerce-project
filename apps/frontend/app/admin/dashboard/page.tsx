@@ -70,13 +70,13 @@ export default function DashboardPage() {
         setLoading(true);
         const [productsRes, categoriesRes, usersRes] = await Promise.allSettled([
           productsApi.getAll(),
-          categoriesApi.getAll(),
+          categoriesApi.index(),
           usersApi.getAll(),
         ]);
 
-        const productCount = productsRes.status === 'fulfilled' ? (productsRes.value.data?.length || 0) : 0;
-        const categoryCount = categoriesRes.status === 'fulfilled' ? (categoriesRes.value.data?.length || 0) : 0;
-        const userCount = usersRes.status === 'fulfilled' ? (usersRes.value.data?.length || 0) : 0;
+        const productCount = productsRes.status === 'fulfilled' ? (productsRes.value.products?.length || 0) : 0;
+        const categoryCount = categoriesRes.status === 'fulfilled' ? (categoriesRes.value?.length || 0) : 0;
+        const userCount = usersRes.status === 'fulfilled' ? (usersRes.value.users?.length || 0) : 0;
 
         setStats({
           products: { count: productCount, change: productCount > 0 ? '+100%' : '+0%' },

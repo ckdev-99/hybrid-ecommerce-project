@@ -1,5 +1,6 @@
 import { api } from './client';
 import type { LaravelResponse } from './types';
+import type { Category } from './categories';
 
 export interface Product {
   id: number;
@@ -139,6 +140,15 @@ export const productsApi = {
   featured: async (params?: { limit?: number }) => {
     const response = await api.get<LaravelResponse<ProductsData>>('/products/featured', { params });
     return response.data.data.products;
+  },
+
+  /**
+   * Get all categories list for product form
+   * GET /api/categories (public endpoint, no auth required)
+   */
+  getCategoriesList: async () => {
+    const response = await api.get<LaravelResponse<{ categories: Category[] }>>('/categories');
+    return response.data.data.categories;
   },
 
   /**

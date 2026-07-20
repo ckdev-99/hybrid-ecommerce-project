@@ -62,7 +62,7 @@ export interface UserData {
 export const usersApi = {
   /**
    * Get all users (matches Laravel index())
-   * GET /api/users
+   * GET /api/admin/users
    */
   getAll: async (params?: {
     search?: string;
@@ -70,13 +70,13 @@ export const usersApi = {
     is_active?: boolean;
     per_page?: number;
   }) => {
-    const response = await api.get<LaravelResponse<UsersData>>('/users', { params });
+    const response = await api.get<LaravelResponse<UsersData>>('/admin/users', { params });
     return response.data.data;
   },
 
   /**
    * Get all users (alias for getAll, matches Laravel index())
-   * GET /api/users
+   * GET /api/admin/users
    */
   index: async (params?: {
     search?: string;
@@ -89,16 +89,16 @@ export const usersApi = {
 
   /**
    * Get a single user (matches Laravel show())
-   * GET /api/users/{id}
+   * GET /api/admin/users/{id}
    */
   show: async (id: number) => {
-    const response = await api.get<LaravelResponse<UserData>>(`/users/${id}`);
+    const response = await api.get<LaravelResponse<UserData>>(`/admin/users/${id}`);
     return response.data.data.user;
   },
 
   /**
    * Get a single user (alias for show)
-   * GET /api/users/{id}
+   * GET /api/admin/users/{id}
    */
   getById: async (id: number) => {
     return usersApi.show(id);

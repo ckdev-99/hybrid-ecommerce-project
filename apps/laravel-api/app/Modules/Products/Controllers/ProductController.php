@@ -167,4 +167,15 @@ class ProductController extends Controller
             ],
         ]);
     }
+
+    public function getCategoriesList()
+    {
+        $all_categories = $this->productService->getAllCategories();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Categories list fetched successfully.',
+            'data' => $all_categories
+        ]);
+    }
 }

@@ -22,10 +22,10 @@ export default function LoginPage() {
 
     try {
       await authApi.login({ email, password });
-      router.push('/admin/dashboard');
+      // Use window.location for full page reload to ensure cookies are sent to server
+      window.location.href = '/admin/dashboard';
     } catch {
       setError('Login failed. Please check your credentials.');
-    } finally {
       setLoading(false);
     }
   };
