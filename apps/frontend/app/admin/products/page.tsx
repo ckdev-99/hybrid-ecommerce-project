@@ -84,7 +84,7 @@ export default function ProductsPage() {
     try {
       setLoading(true);
       const response = await productsApi.getAll();
-      const productsData = Array.isArray(response.data) ? response.data : [];
+      const productsData = Array.isArray(response.products) ? response.products : [];
       setProducts(productsData);
     } catch (error) {
       toast.error('Failed to load products');
@@ -97,8 +97,7 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoriesApi.getAll();
-      const categoriesData = Array.isArray(response.data) ? response.data : [];
+      const categoriesData = await productsApi.getCategoriesList();
       setCategories(categoriesData);
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -108,8 +107,13 @@ export default function ProductsPage() {
 
   // Fetch data on mount
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    const fetchData = async () => {
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories()
+      ]);
+    };
+    fetchData();
   }, []);
 
   const resetForm = () => {
@@ -140,6 +144,21 @@ export default function ProductsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.name?.trim()) {
+      toast.error('Product name is required');
+      return;
+    }
+    if (!formData.price || formData.price <= 0) {
+      toast.error('Price is required and must be greater than 0');
+      return;
+    }
+    if (!formData.sku?.trim()) {
+      toast.error('SKU is required');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -161,6 +180,20 @@ export default function ProductsPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
+
+    // Validate required fields
+    if (!formData.name?.trim()) {
+      toast.error('Product name is required');
+      return;
+    }
+    if (!formData.price || formData.price <= 0) {
+      toast.error('Price is required and must be greater than 0');
+      return;
+    }
+    if (!formData.sku?.trim()) {
+      toast.error('SKU is required');
+      return;
+    }
 
     setSubmitting(true);
 
@@ -302,11 +335,15 @@ export default function ProductsPage() {
                     <Select
                       value={formData.category_id ? String(formData.category_id) : ''}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, category_id: parseInt(value) || undefined })
+                        setFormData({ ...formData, category_id: value ? parseInt(value) : undefined })
                       }
                     >
                       <SelectTrigger id="create-category">
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Select category">
+                          {formData.category_id
+                            ? categories.find((c) => c.id === formData.category_id)?.name || 'Select category'
+                            : 'Select category'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">No category</SelectItem>
@@ -406,7 +443,7 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-track">Track Quantity</Label>
                     <Select
-                      value={formData.track_quantity === true ? 'true' : formData.track_quantity === false ? 'false' : undefined}
+                      value={formData.track_quantity === true ? 'true' : formData.track_quantity === false ? 'false' : ''}
                       onValueChange={(value) =>
                         setFormData({ ...formData, track_quantity: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
@@ -471,7 +508,7 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-virtual">Virtual Product</Label>
                     <Select
-                      value={formData.is_virtual === true ? 'true' : formData.is_virtual === false ? 'false' : undefined}
+                      value={formData.is_virtual === true ? 'true' : formData.is_virtual === false ? 'false' : ''}
                       onValueChange={(value) =>
                         setFormData({ ...formData, is_virtual: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
@@ -491,7 +528,7 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-active">Status</Label>
                     <Select
-                      value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
+                      value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : ''}
                       onValueChange={(value) =>
                         setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
@@ -717,7 +754,11 @@ export default function ProductsPage() {
                     }
                   >
                     <SelectTrigger id="edit-category">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Select category">
+                        {formData.category_id
+                          ? categories.find((c) => c.id === formData.category_id)?.name || 'Select category'
+                          : 'Select category'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">No category</SelectItem>

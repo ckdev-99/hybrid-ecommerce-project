@@ -91,8 +91,13 @@ export default function CategoriesPage() {
 
   // Fetch categories on mount
   useEffect(() => {
-    fetchCategories();
-    fetchParentCategories();
+    const fetchData = async () => {
+      await Promise.all([
+        fetchCategories(),
+        fetchParentCategories()
+      ]);
+    };
+    fetchData();
   }, []);
 
   const resetForm = () => {
@@ -298,7 +303,7 @@ export default function CategoriesPage() {
                   <div className="space-y-2">
                     <Label htmlFor="create-featured">Featured</Label>
                     <Select
-                      value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : undefined}
+                      value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : ''}
                       onValueChange={(value) =>
                         setFormData({ ...formData, is_featured: value === 'true' ? true : value === 'false' ? false : undefined })
                       }
@@ -319,7 +324,7 @@ export default function CategoriesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="create-active">Status</Label>
                   <Select
-                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
+                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : ''}
                     onValueChange={(value) =>
                       setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                     }

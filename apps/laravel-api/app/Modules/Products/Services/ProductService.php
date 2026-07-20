@@ -2,6 +2,7 @@
 
 namespace App\Modules\Products\Services;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Str;
 
@@ -166,5 +167,12 @@ class ProductService
     {
         $product->increment('stock_qty', $adjustment);
         return $product->fresh();
+    }
+
+    public function getAllCategories()
+    {
+        $categories = Category::select('id', 'name')->get();
+
+        return $categories;
     }
 }

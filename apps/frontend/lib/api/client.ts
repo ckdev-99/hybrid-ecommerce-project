@@ -9,24 +9,53 @@ export const api = axios.create({
   },
 });
 
-// Add token to requests
+// Add token to requests using a simpler approach
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    // Read from Zustand persist storage
-    const authStorage = localStorage.getItem('auth-storage');
-    if (authStorage) {
-      try {
-        const authState = JSON.parse(authStorage);
-        const token = authState.state?.token || authState.token;
-        if (token) {
+    try {
+      // Get auth storage from localStorage
+      const authStorage = localStorage.getItem('auth-storage');
+
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+
+        // Zustand persist stores data as: { state: { token, user }, version: 0 }
+        let token = null;
+
+        if (parsed?.state?.token) {
+          token = parsed.state.token;
+        } else if (parsed?.token) {
+          token = parsed.token;
+        }
+
+        if (token && typeof token === 'string' && token.length > 0) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-      } catch (e) {
-        console.error('Failed to parse auth storage:', e);
       }
+    } catch (error) {
+      console.error('Error adding auth token:', error);
     }
   }
+
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Response interceptor to handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('Authentication error - please log in again');
+      // Optional: redirect to login or clear invalid token
+      if (typeof window !== 'undefined') {
+        // You could redirect to login here if needed
+        // window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

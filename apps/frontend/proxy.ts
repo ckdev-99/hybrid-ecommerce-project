@@ -40,6 +40,7 @@ export const proxy = (request: NextRequest) => {
 
   // Get the auth token from cookies (set by Zustand store)
   const authToken = request.cookies.get('auth-token')?.value;
+  const userInfoCookie = request.cookies.get('user-info')?.value;
 
   // Parse token to check user roles if needed
   let userRoles: string[] = [];
@@ -49,14 +50,15 @@ export const proxy = (request: NextRequest) => {
     isAuthenticated = true;
 
     // Try to get user roles from user-info cookie
-    const userInfo = request.cookies.get('user-info')?.value;
-    if (userInfo) {
+    if (userInfoCookie) {
       try {
-        const user = JSON.parse(userInfo);
+        const user = JSON.parse(decodeURIComponent(userInfoCookie));
         userRoles = user.roles?.map((r: { name: string }) => r.name) || [];
       } catch (e) {
-        console.error('Failed to parse user info:', e);
+        console.error('[Proxy] Failed to parse user info cookie:', e);
       }
+    } else {
+      console.log('[Proxy] No user-info cookie found, but auth-token exists');
     }
   }
 
@@ -80,9 +82,11 @@ export const proxy = (request: NextRequest) => {
   if (isSuperAdminRoute && isAuthenticated) {
     // Check if user has SuperAdmin role
     const isSuperAdmin = userRoles.includes('SuperAdmin');
+    console.log('[Proxy] SuperAdmin route check:', { pathname, userRoles, isSuperAdmin });
 
     if (!isSuperAdmin) {
       // Redirect non-super admins to dashboard
+      console.log('[Proxy] Redirecting non-super admin to dashboard');
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
   }

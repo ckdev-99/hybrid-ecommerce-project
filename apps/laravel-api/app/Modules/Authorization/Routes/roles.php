@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Route;
 // Public routes - Get roles
 Route::get('/roles', [RoleController::class, 'index']);
 
-// Admin routes - Role management
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+// SuperAdmin routes - Role management (SuperAdmin only - level 1)
+Route::middleware(['auth:sanctum', 'role.level:1'])->prefix('admin')->group(function () {
     Route::post('/roles', [RoleController::class, 'store']);
     Route::get('/roles/{role}', [RoleController::class, 'show']);
     Route::put('/roles/{role}', [RoleController::class, 'update']);

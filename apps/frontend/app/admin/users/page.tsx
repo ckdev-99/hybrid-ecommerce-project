@@ -72,20 +72,12 @@ export default function UsersPage() {
   // Check if user is SuperAdmin
   const isSuperAdmin = user?.roles?.some((r) => r.name === 'SuperAdmin');
 
-  // Fetch users on mount
-  useEffect(() => {
-    if (!isSuperAdmin) {
-      router.push('/admin/dashboard');
-      return;
-    }
-    fetchUsers();
-  }, [isSuperAdmin]);
-
+  // Fetch users function
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const response = await usersApi.getAll();
-      setUsers(response.data || []);
+      setUsers(response.users || []);
     } catch (error) {
       toast.error('Failed to load users');
       console.error(error);
@@ -93,6 +85,24 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
+
+  // Fetch users on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      // Wait for user to be loaded from localStorage
+      if (!user) {
+        return;
+      }
+      // Redirect if user doesn't have SuperAdmin role
+      if (!isSuperAdmin) {
+        toast.error('Access denied. SuperAdmin role required.');
+        router.push('/admin/dashboard');
+        return;
+      }
+      await fetchUsers();
+    };
+    fetchData();
+  }, [user, isSuperAdmin, router]);
 
   const resetForm = () => {
     setFormData({
@@ -358,7 +368,7 @@ export default function UsersPage() {
                 <div className="space-y-2">
                   <Label htmlFor="create-active">Status</Label>
                   <Select
-                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
+                    value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : ''}
                     onValueChange={(value) =>
                       setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                     }

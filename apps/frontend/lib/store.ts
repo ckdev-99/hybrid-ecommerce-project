@@ -39,13 +39,14 @@ export const useAuthStore = create<AuthState>()(
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
-        // Store user info for middleware role checks
-        Cookies.set('user-info', JSON.stringify(user), {
+        // Store user info for middleware role checks (properly encoded)
+        Cookies.set('user-info', encodeURIComponent(JSON.stringify(user)), {
           expires: 7,
           path: '/',
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
+        console.log('[AuthStore] Cookies set:', { token: !!token, userRoles: user?.roles });
       },
       logout: () => {
         set({ user: null, token: null });
