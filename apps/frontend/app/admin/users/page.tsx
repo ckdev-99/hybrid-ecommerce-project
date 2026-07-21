@@ -194,13 +194,15 @@ export default function UsersPage() {
 
   const openEditDialog = (user: User) => {
     setSelectedUser(user);
+    // Get the primary role (first one)
+    const primaryRoleId = user.roles?.[0]?.id || null;
     setFormData({
       name: user.name,
       email: user.email,
       password: '',
       phone: user.phone || '',
       is_active: user.is_active,
-      roles: user.roles?.map((r) => r.id) || [],
+      roles: primaryRoleId ? [primaryRoleId] : [],
     });
     setIsEditDialogOpen(true);
   };
@@ -212,9 +214,11 @@ export default function UsersPage() {
 
   const openRoleDialog = (user: User) => {
     setSelectedUser(user);
+    // Get the primary role (first one, or lowest level = highest privilege)
+    const primaryRoleId = user.roles?.[0]?.id || null;
     setFormData((prev) => ({
       ...prev,
-      roles: user.roles?.map((r) => r.id) || [],
+      roles: primaryRoleId ? [primaryRoleId] : [],
     }));
     setIsRoleDialogOpen(true);
   };
@@ -676,73 +680,58 @@ export default function UsersPage() {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Manage User Roles</DialogTitle>
+            <DialogTitle>Manage User Role</DialogTitle>
             <DialogDescription>
-              Assign roles to {selectedUser?.name}
+              Assign a role to {selectedUser?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-2">
-              <Label>Select Roles</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
+              <Label>Select Role</Label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
                   <input
-                    type="checkbox"
-                    id="role-admin"
-                    checked={formData.roles?.includes(1)}
-                    onChange={(e) => {
-                      const roles = formData.roles || [];
-                      if (e.target.checked) {
-                        setFormData({ ...formData, roles: [...roles, 1] });
-                      } else {
-                        setFormData({ ...formData, roles: roles.filter((r) => r !== 1) });
-                      }
-                    }}
-                  />
-                  <label htmlFor="role-admin" className="text-sm">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                      <Shield className="w-3 h-3" />
-                      Admin
-                    </span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                    type="radio"
                     id="role-superadmin"
-                    checked={formData.roles?.includes(2)}
-                    onChange={(e) => {
-                      const roles = formData.roles || [];
-                      if (e.target.checked) {
-                        setFormData({ ...formData, roles: [...roles, 2] });
-                      } else {
-                        setFormData({ ...formData, roles: roles.filter((r) => r !== 2) });
-                      }
-                    }}
+                    name="user-role"
+                    checked={formData.roles?.[0] === 1}
+                    onChange={() => setFormData({ ...formData, roles: [1] })}
+                    className="w-4 h-4 text-purple-600"
                   />
-                  <label htmlFor="role-superadmin" className="text-sm">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">
+                  <label htmlFor="role-superadmin" className="text-sm cursor-pointer flex-1">
+                    <span className="inline-flex items-center gap-1 px-3 py-2 text-xs rounded-full bg-purple-100 text-purple-700">
                       <ShieldCheck className="w-3 h-3" />
                       SuperAdmin
                     </span>
                   </label>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <input
-                    type="checkbox"
-                    id="role-customer"
-                    checked={formData.roles?.includes(3)}
-                    onChange={(e) => {
-                      const roles = formData.roles || [];
-                      if (e.target.checked) {
-                        setFormData({ ...formData, roles: [...roles, 3] });
-                      } else {
-                        setFormData({ ...formData, roles: roles.filter((r) => r !== 3) });
-                      }
-                    }}
+                    type="radio"
+                    id="role-admin"
+                    name="user-role"
+                    checked={formData.roles?.[0] === 2}
+                    onChange={() => setFormData({ ...formData, roles: [2] })}
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <label htmlFor="role-customer" className="text-sm">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">
+                  <label htmlFor="role-admin" className="text-sm cursor-pointer flex-1">
+                    <span className="inline-flex items-center gap-1 px-3 py-2 text-xs rounded-full bg-blue-100 text-blue-700">
+                      <Shield className="w-3 h-3" />
+                      Admin
+                    </span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    id="role-customer"
+                    name="user-role"
+                    checked={formData.roles?.[0] === 3}
+                    onChange={() => setFormData({ ...formData, roles: [3] })}
+                    className="w-4 h-4 text-slate-600"
+                  />
+                  <label htmlFor="role-customer" className="text-sm cursor-pointer flex-1">
+                    <span className="inline-flex items-center gap-1 px-3 py-2 text-xs rounded-full bg-slate-100 text-slate-600">
                       <ShieldAlert className="w-3 h-3" />
                       Customer
                     </span>
@@ -752,7 +741,7 @@ export default function UsersPage() {
             </div>
 
             <p className="text-xs text-slate-500">
-              Users can have multiple roles. The highest level role determines primary permissions.
+              Select one role for this user. The role determines their access permissions.
             </p>
           </div>
 

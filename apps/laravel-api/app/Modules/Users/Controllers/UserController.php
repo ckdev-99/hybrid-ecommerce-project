@@ -4,6 +4,8 @@ namespace App\Modules\Users\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Users\Requests\StoreUserRequest;
+use App\Modules\Users\Requests\UpdateUserRequest;
 use App\Modules\Users\Resources\UserResource;
 use App\Modules\Users\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
@@ -77,6 +79,69 @@ class UserController extends Controller
             'data' => [
                 'user' => UserResource::make($user),
             ],
+        ]);
+    }
+
+    /**
+     * Store a newly created user.
+     */
+    public function store(StoreUserRequest $request)
+    {
+        $validatedData = $request->validated();
+
+        $user = $this->profileService->createUser($validatedData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User added successfully',
+            'data' => $user
+        ]);
+    }
+
+    /**
+     * Update the specified user.
+     */
+    public function update(UpdateUserRequest $request, User $user)
+    {
+        $validatedData = $request->validated();
+
+        $updated_user = $this->profileService->updateUser($user, $validatedData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User updated successfully',
+            'data' => $updated_user
+        ]);
+    }
+
+    /**
+     * Remove the specified user.
+     */
+    public function destroy(User $user)
+    {
+        $this->profileService->deleteUser($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully.'
+        ]);
+    }
+
+    /**
+     * Update user roles.
+     */
+    public function updateUsersRole(Request $request, User $user)
+    {
+        $request->validate([
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,id',
+        ]);
+
+        $user = $this->profileService->updateUserRoles($user, $request->input('roles', []));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User roles updated successfully'
         ]);
     }
 }

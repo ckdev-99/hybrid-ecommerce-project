@@ -22,6 +22,10 @@ Route::middleware('auth:sanctum')->group(function () {
 // Admin routes - User management (SuperAdmin and Admin only - level 2+)
 Route::middleware(['auth:sanctum', 'role.level:2'])->prefix('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy']);
     Route::put('/users/{user}/status', [UserController::class, 'updateStatus']);
+    Route::put('/users/{user}/roles', [UserController::class, 'updateUsersRole']);
 });
