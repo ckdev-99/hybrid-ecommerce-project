@@ -62,4 +62,65 @@ class ProfileService
 
         return $user->fresh('roles');
     }
+
+    /**
+     * Create a new user.
+     */
+    public function createUser(array $data)
+    {
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'phone' => $data['phone'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
+            'status' => $data['status'] ?? 'active',
+        ]);
+
+        //Attach roles if provided
+        if (isset($data['roles']) && is_array($data['roles'])) {
+            $user->roles()->sync($data['roles']);
+        }
+
+        return $user->fresh('roles');
+    }
+
+    /**
+     * Update a user.
+     */
+    public function updateUser(User $user, array $data)
+    {
+        if (empty($data['password'])) {
+            unset($data['password']);
+        }
+
+        $user->fill($data);
+        $user->save();
+
+        // Sync roles if provided
+        if (isset($data['roles']) && is_array($data['roles'])) {
+            $user->roles()->sync($data['roles']);
+        }
+
+        return $user->fresh('roles');
+    }
+
+    /**
+     * Delete a user.
+     */
+    public function deleteUser(User $user): bool
+    {
+        // Detach roles before deleting
+        $user->roles()->detach();
+        return $user->delete();
+    }
+
+    /**
+     * Update user roles.
+     */
+    public function updateUserRoles(User $user, array $roleIds): User
+    {
+        $user->roles()->sync($roleIds);
+        return $user->fresh('roles');
+    }
 }

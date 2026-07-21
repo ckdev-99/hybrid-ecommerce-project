@@ -109,7 +109,7 @@ export const usersApi = {
    * PUT /api/admin/users/{id}/status
    */
   updateStatus: async (id: number, status: 'active' | 'inactive' | 'banned') => {
-    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/status`, { status });
+    const response = await api.put<{ success: boolean; message: string; data: { user: User } }>(`/admin/users/${id}/status`, { status });
     return response.data.data.user;
   },
 
@@ -126,8 +126,8 @@ export const usersApi = {
    * POST /api/admin/users
    */
   create: async (data: UserFormData) => {
-    const response = await api.post<LaravelResponse<UserData>>('/admin/users', data);
-    return response.data.data.user;
+    const response = await api.post<{ success: boolean; message: string; data: User }>('/admin/users', data);
+    return response.data.data;
   },
 
   /**
@@ -143,8 +143,8 @@ export const usersApi = {
    * PUT /api/admin/users/{id}
    */
   update: async (id: number, data: Partial<UserFormData>) => {
-    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}`, data);
-    return response.data.data.user;
+    const response = await api.put<{ success: boolean; message: string; data: User }>(`/admin/users/${id}`, data);
+    return response.data.data;
   },
 
   /**
@@ -152,7 +152,7 @@ export const usersApi = {
    * DELETE /api/admin/users/{id}
    */
   delete: async (id: number) => {
-    const response = await api.delete<LaravelResponse<void>>(`/admin/users/${id}`);
+    const response = await api.delete<{ success: boolean; message: string }>(`/admin/users/${id}`);
     return response.data;
   },
 
@@ -169,7 +169,7 @@ export const usersApi = {
    * PUT /api/admin/users/{id}/roles
    */
   updateRoles: async (id: number, roleIds: number[]) => {
-    const response = await api.put<LaravelResponse<UserData>>(`/admin/users/${id}/roles`, { roles: roleIds });
-    return response.data.data.user;
+    const response = await api.put<{ success: boolean; message: string; data?: User }>(`/admin/users/${id}/roles`, { roles: roleIds });
+    return response.data.data;
   },
 };
