@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { productsApi, categoriesApi, usersApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
 import {
   Package,
   FolderTree,
@@ -12,7 +13,6 @@ import {
   Clock,
   Activity,
   ArrowRight,
-  Store,
   Loader2,
 } from 'lucide-react';
 
@@ -125,9 +125,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-          <Store className="w-7 h-7 text-white" />
-        </div>
+        <CommerceBridgeLogo size={48} className="text-indigo-600" />
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
             Welcome back, {user?.name}!

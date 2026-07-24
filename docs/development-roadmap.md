@@ -2,639 +2,301 @@
 
 ## 📋 Overview
 
-This document outlines the **incremental development approach** for building the hybrid Laravel + NestJS e-commerce platform. Each phase builds upon the previous one, ensuring a solid foundation before moving to the next feature.
+This document outlines the **feature-driven development approach** for building the complete Laravel + Next.js e-commerce platform. Each feature is built end-to-end (backend → admin UI → customer UI) before moving to the next feature.
 
 ---
-
-Level	Role	     Permissions
-1	  SuperAdmin   Everything + create admins
-2	  Admin	       Products, orders, categories
-3	  User	       Browse, cart, checkout
 
 ## 🎯 Development Philosophy
 
-> **"Build what you need, when you need it"**
+> **"Build complete features, not complete layers"**
 
-We follow an incremental approach:
-- ✅ Create database tables **as needed** for each feature
-- ✅ Test each feature before moving to the next
-- ✅ Laravel owns the schema (migrations), NestJS maps to existing tables
-- ✅ Both services share the same PostgreSQL database
+### ❌ The Wrong Approach: Layer-by-Layer
+```
+Week 1-8:  Build ALL admin panels
+Week 9-12: Build ALL customer pages
+→ Problem: Discover gaps months later
+→ Problem: Nothing usable until late
+→ Problem: Constant rework
+```
+
+### ✅ The Right Approach: Feature-by-Feature
+```
+Week 1: Complete Authentication (Admin + Customer)
+Week 2: Complete Products (Backend + Admin + Customer)
+Week 3: Complete Categories (Backend + Admin + Customer)
+→ Every feature is fully functional
+→ Early feedback on design decisions
+→ Portfolio-worthy at every sprint
+```
+
+### Why This Works
+
+1. **Early Usability**: By Week 3, you have a working e-commerce platform
+2. **Fewer Gaps**: Customer needs are discovered while building admin features
+3. **Better Learning**: Learn end-to-end flows, not just CRUD patterns
+4. **Interview Ready**: Demo complete features, not half-built panels
+5. **Realistic**: This is how companies actually build software
 
 ---
 
-## 📊 Phase-by-Phase Development
+## 🏗️ Architecture
 
-### ✅ Phase 1: Foundation - Authentication & Users
-**Duration:** Completed
-**Priority:** 🔴 CRITICAL (must be done first)
-
-**What we built:**
-- ✅ User registration & login
-- ✅ Role-based access control (SuperAdmin, Admin, User)
-- ✅ JWT token authentication via Laravel Sanctum
-- ✅ User profile management
-- ✅ Role & Permission middleware
-
-#### Database Tables (Phase 1) ✅
-
-| Table | Purpose | Owner |
-|-------|---------|-------|
-| `users` | User accounts | Laravel |
-| `roles` | Role definitions | Laravel |
-| `user_roles` | User-role relationships | Laravel |
-| `permissions` | Permission definitions | Laravel |
-| `role_permissions` | Role-permission relationships | Laravel |
-| `personal_access_tokens` | Sanctum JWT tokens | Laravel |
-
-#### Laravel Implementation ✅
-
+**Monorepo Structure:**
 ```
-app/
-├── Models/
-│   ├── User.php          # HasApiTokens, HasRoles
-│   └── Role.php
-├── Http/
-│   ├── Controllers/
-│   │   └── AuthController.php
-│   └── Middleware/
-│       ├── RoleLevelMiddleware.php
-│       └── PermissionMiddleware.php
-└── Modules/
-    └── Users/
-        ├── Routes/users.php
-        └── Controllers/UserController.php
-
-routes/api.php
-├── POST   /api/register        # ✅ Create user + assign default role
-├── POST   /api/login           # ✅ Issue JWT token
-├── POST   /api/logout          # ✅ Revoke token
-├── GET    /api/me               # ✅ Get current user
-├── PUT    /api/me               # ✅ Update profile
-└── GET    /api/roles            # ✅ List roles (admin only)
+hybrid-ecommerce-project/
+├── apps/
+│   ├── laravel-api/          # Laravel 11 Backend API
+│   └── frontend/             # Next.js 16 Frontend (Admin + Customer)
+└── docs/
+    ├── development-roadmap.md    # This file
+    ├── completed-features.md     # What's done
+    └── pending-features.md        # What's next
 ```
 
-#### ✅ Phase 1 Exit Criteria
-
-- [x] Users can register and receive a JWT token
-- [x] Users can login with email/password
-- [x] SuperAdmin can create Admin accounts
-- [x] Role-based middleware works
-- [x] Token-based authentication is secured
+**Tech Stack:**
+- **Backend**: Laravel 11, MySQL, Sanctum Auth
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS, Zustand
+- **UI Components**: shadcn/ui
 
 ---
 
-### ✅ Phase 2: Product Catalog (Backend)
-**Duration:** Completed
-**Priority:** 🟠 HIGH
-
-**What we built:**
-- ✅ Category management
-- ✅ Product CRUD operations
-- ✅ Category-product relationships
-- ✅ Protected routes with permission middleware
-
-#### Database Tables (Phase 2) ✅
-
-| Table | Purpose | Owner |
-|-------|---------|-------|
-| `categories` | Product categories | Laravel |
-| `products` | Product catalog | Laravel |
-
-#### Laravel Implementation ✅
-
-```
-app/
-├── Models/
-│   ├── Category.php       # hasMany products
-│   └── Product.php         # belongsTo Category
-└── Modules/
-    ├── Categories/
-    │   ├── Routes/categories.php
-    │   └── Controllers/CategoryController.php
-    └── Products/
-        ├── Routes/products.php
-        └── Controllers/ProductController.php
-
-routes/api.php
-├── GET    /api/categories              # ✅ List categories
-├── POST   /api/categories              # ✅ Create (admin)
-├── GET    /api/categories/{id}         # ✅ Single category
-├── PUT    /api/categories/{id}         # ✅ Update (admin)
-├── DELETE /api/categories/{id}         # ✅ Delete (admin)
-├── GET    /api/products                # ✅ List products
-├── POST   /api/products                # ✅ Create (admin)
-├── GET    /api/products/{id}           # ✅ Single product
-├── PUT    /api/products/{id}           # ✅ Update (admin)
-├── DELETE /api/products/{id}           # ✅ Delete (admin)
-└── GET    /api/categories/{id}/products # ✅ Products by category
-```
-
-#### ✅ Phase 2 Exit Criteria
-
-- [x] Admins can create categories
-- [x] Admins can create products
-- [x] Users can browse products by category
-- [x] Categories and products are relational
-- [x] Permission-based access control works
-
----
-
-### 🚧 Phase 3: Admin Frontend (Next.js)
-**Duration:** Week 3
-**Priority:** 🔴 HIGH (current focus)
-
-**What we're building:**
-- Admin authentication flow (login/logout)
-- Admin dashboard
-- Category management UI
-- Product management UI
-- User & role management UI (SuperAdmin only)
-
-#### Tech Stack
-
-- **Framework:** Next.js 14+ (App Router)
-- **Styling:** TailwindCSS + shadcn/ui
-- **State Management:** React Context / Zustand
-- **API Client:** Axios / fetch
-- **Authentication:** JWT token storage (httpOnly cookies)
-
-#### Frontend Pages to Build
-
-```
-apps/frontend/app/
-├── (admin)/
-│   ├── login/
-│   │   └── page.tsx                    # Admin login
-│   ├── dashboard/
-│   │   └── page.tsx                    # Admin dashboard home
-│   ├── categories/
-│   │   ├── page.tsx                    # Categories list
-│   │   ├── new/
-│   │   │   └── page.tsx                # Create category
-│   │   └── [id]/
-│   │       ├── page.tsx                # Edit category
-│   │       └── delete/page.tsx        # Delete category
-│   ├── products/
-│   │   ├── page.tsx                    # Products list
-│   │   ├── new/
-│   │   │   └── page.tsx                # Create product
-│   │   └── [id]/
-│   │       ├── page.tsx                # Edit product
-│   │       └── delete/page.tsx         # Delete product
-│   └── users/
-│       ├── page.tsx                    # Users list (SuperAdmin only)
-│       ├── new/
-│       │   └── page.tsx                # Create admin user
-│       └── [id]/
-│           └── page.tsx                # Edit user / assign roles
-├── (auth)/
-│   └── layout.tsx                      # Auth provider & middleware
-└── layout.tsx                           # Root layout
-```
-
-#### Components to Build
-
-```
-components/
-├── admin/
-│   ├── sidebar/
-│   │   └── Sidebar.tsx                 # Admin navigation
-│   ├── header/
-│   │   └── Header.tsx                  # Admin header with logout
-│   ├── categories/
-│   │   ├── CategoryForm.tsx            # Create/edit form
-│   │   └── CategoryList.tsx            # Categories table
-│   ├── products/
-│   │   ├── ProductForm.tsx             # Create/edit form
-│   │   └── ProductList.tsx             # Products table
-│   └── users/
-│       ├── UserForm.tsx                # Create/edit user
-│       └── UserList.tsx                # Users table
-└── ui/
-    └── [shadcn components]             # Button, Input, Table, etc.
-```
-
-#### API Integration Points
-
-```
-lib/api/
-├── auth.ts
-│   ├── login(email, password)          # POST /api/login
-│   ├── logout()                         # POST /api/logout
-│   └── me()                             # GET /api/me
-├── categories.ts
-│   ├── getAll()                         # GET /api/categories
-│   ├── getOne(id)                       # GET /api/categories/{id}
-│   ├── create(data)                     # POST /api/categories
-│   ├── update(id, data)                # PUT /api/categories/{id}
-│   └── delete(id)                       # DELETE /api/categories/{id}
-├── products.ts
-│   ├── getAll()                         # GET /api/products
-│   ├── getOne(id)                       # GET /api/products/{id}
-│   ├── create(data)                     # POST /api/products
-│   ├── update(id, data)                # PUT /api/products/{id}
-│   └── delete(id)                       # DELETE /api/products/{id}
-└── users.ts
-    ├── getAll()                         # GET /api/users (SuperAdmin)
-    ├── getOne(id)                       # GET /api/users/{id}
-    ├── create(data)                     # POST /api/users
-    ├── update(id, data)                # PUT /api/users/{id}
-    └── delete(id)                       # DELETE /api/users/{id}
-```
-
-#### ✅ Phase 3 Exit Criteria
-
-- [ ] Admin login/logout works with JWT
-- [ ] Protected admin routes redirect to login if not authenticated
-- [ ] Dashboard displays key metrics (total products, categories, users)
-- [ ] Categories can be created, edited, and deleted via UI
-- [ ] Products can be created, edited, and deleted via UI
-- [ ] SuperAdmin can create Admin accounts and manage users
-- [ ] Form validation matches backend rules
-- [ ] Error handling displays user-friendly messages
-- [ ] Responsive design works on tablet/desktop
-
----
-
-### Phase 4: Shopping Cart (NestJS Service)
-**Duration:** Week 4
-**Priority:** 🟡 MEDIUM
-
-**What we'll build:**
-- Real-time cart management
-- Add/remove/update cart items
-- Cart persistence across sessions
-- Stock validation
-
-#### Database Tables (Phase 4)
-
-| Table | Purpose | Laravel Owner | NestJS Entity |
-|-------|---------|---------------|---------------|
-| `carts` | Shopping carts | Laravel (migration) | Cart (entity) |
-| `cart_items` | Cart line items | Laravel (migration) | CartItem (entity) |
-
-#### Laravel Migrations to Create
-
-```bash
-# 1. Carts table
-php artisan make:migration create_carts_table
-
-# 2. Cart items table
-php artisan make:migration create_cart_items_table
-```
-
-#### NestJS Setup
-
-```bash
-# Install MikroORM dependencies
-cd apps/nestjs-api
-pnpm add @mikro-orm/core @mikro-orm/nestjs @mikro-orm/postgresql @mikro-orm/sqlite
-
-# Configure PostgreSQL connection
-```
-
-#### NestJS Entities (Map to Laravel Tables)
-
-```
-apps/nestjs-api/src/
-├── entities/
-│   ├── cart.entity.ts       # Maps to carts table
-│   └── cart-item.entity.ts   # Maps to cart_items table
-├── modules/
-│   └── cart/
-│       ├── cart.controller.ts
-│       ├── cart.service.ts
-│       └── cart.module.ts
-└── strategies/
-    └── jwt.strategy.ts      # Validate Laravel tokens
-```
-
-#### API Routes
-
-```
-apps/nestjs-api/
-├── POST   /api/cart                # Create cart
-├── GET    /api/cart                # Get user's cart
-├── POST   /api/cart/items          # Add item to cart
-├── PUT    /api/cart/items/{id}     # Update quantity
-├── DELETE /api/cart/items/{id}      # Remove item
-└── DELETE /api/cart                # Clear cart
-```
-
-#### ✅ Phase 3 Exit Criteria
-
-- [ ] NestJS connects to PostgreSQL database
-- [ ] JWT authentication works cross-service
-- [ ] Users can add products to cart
-- [ ] Cart items can be updated/removed
-- [ ] Stock is validated before adding to cart
-
----
-
-### Phase 5: Orders & Payments (NestJS Service)
-**Duration:** Week 5
-**Priority:** 🟢 MEDIUM
-
-**What we build:**
-- Order checkout process
-- Order management
-- Payment integration (Stripe/PayPal)
-- Order status tracking
-- Order notifications
-
-#### Database Tables (Phase 4)
-
-| Table | Purpose | Laravel Owner | NestJS Entity |
-|-------|---------|---------------|---------------|
-| `addresses` | Shipping addresses | Laravel (migration) | Address (entity) |
-| `orders` | Order headers | Laravel (migration) | Order (entity) |
-| `order_items` | Order line items | Laravel (migration) | OrderItem (entity) |
-| `order_notifications` | Order status updates | Laravel (migration) | OrderNotification (entity) |
-
-#### Laravel Migrations to Create
-
-```bash
-# 1. Addresses table
-php artisan make:migration create_addresses_table
-
-# 2. Orders table
-php artisan make:migration create_orders_table
-
-# 3. Order items table
-php artisan make:migration create_order_items_table
-
-# 4. Order notifications table
-php artisan make:migration create_order_notifications_table
-```
-
-#### NestJS Modules
-
-```
-apps/nestjs-api/src/
-├── entities/
-│   ├── address.entity.ts
-│   ├── order.entity.ts
-│   ├── order-item.entity.ts
-│   └── order-notification.entity.ts
-├── modules/
-│   ├── order/
-│   │   ├── order.controller.ts
-│   │   ├── order.service.ts
-│   │   └── order.module.ts
-│   ├── payment/
-│   │   ├── payment.controller.ts
-│   │   ├── payment.service.ts
-│   │   └── payment.module.ts
-│   └── notification/
-│       ├── notification.gateway.ts   # WebSocket
-│       └── notification.module.ts
-```
-
-#### API Routes
-
-```
-apps/nestjs-api/
-├── GET    /api/orders                     # List user's orders
-├── POST   /api/orders/checkout            # Create order from cart
-├── GET    /api/orders/{id}                # Single order details
-├── PUT    /api/orders/{id}/status        # Update status (admin)
-└── GET    /api/orders/{id}/notifications # Order updates
-```
-
-#### ✅ Phase 4 Exit Criteria
-
-- [ ] Cart can be converted to order
-- [ ] Payment integration processes transactions
-- [ ] Order status updates work
-- [ ] Users receive order notifications
-- [ ] Admin can view all orders
-
----
-
-### Phase 6: Customer Frontend (Next.js)
-**Duration:** Week 6-7
-**Priority:** 🔵 MEDIUM
-
-**What we build:**
-- User authentication flow
-- Product browsing & search
-- Shopping cart interface
-- Checkout flow
-- Order history
-
-#### Frontend Pages
-
-```
-apps/frontend/app/
-├── (auth)/
-│   ├── login/
-│   ├── register/
-│   └── page.tsx
-├── (shop)/
-│   ├── products/
-│   │   ├── page.tsx           # Product listing
-│   │   └── [id]/page.tsx      # Product details
-│   ├── cart/
-│   │   └── page.tsx           # Shopping cart
-│   └── checkout/
-│       └── page.tsx           # Checkout flow
-├── (account)/
-│   ├── orders/
-│   │   ├── page.tsx           # Order history
-│   │   └── [id]/page.tsx      # Order details
-│   └── profile/
-│       └── page.tsx           # User profile
-└── (admin)/
-    ├── dashboard/
-    ├── products/
-    └── orders/
-```
-
-#### ✅ Phase 5 Exit Criteria
-
-- [ ] Complete auth flow works
-- [ ] Products display correctly
-- [ ] Cart operations work in real-time
-- [ ] Checkout process completes
-- [ ] Admin panel functions
-
----
-
-## 🔐 Role-Based Access Control
+## 📊 Complete Feature Roadmap
 
 ### Role Hierarchy
 
 ```
-SuperAdmin (system owner)
-    ├── Can create Admin accounts
-    ├── Can manage all settings
-    └── Full access to everything
+Level 1: SuperAdmin
+    ├── Create Admin accounts
+    ├── Manage all settings
+    └── Full system access
 
-Admin (store manager)
-    ├── Can manage products
-    ├── Can manage categories
-    ├── Can view all orders
-    └── Can update order status
+Level 2: Admin
+    ├── Manage products
+    ├── Manage categories
+    ├── View all orders
+    └── Update order status
 
-User (customer)
-    ├── Can browse products
-    ├── Can manage cart
-    ├── Can checkout
-    └── Can view own orders
-```
-
-### Middleware Implementation
-
-```php
-// Laravel - app/Http/Middleware/RoleMiddleware.php
-public function handle($request, Closure $next, $role) {
-    if (!$request->user()?->hasRole($role)) {
-        return response()->json(['error' => 'Forbidden'], 403);
-    }
-    return $next($request);
-}
-
-// Usage in routes
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->group(function () {
-        Route::post('/products', [ProductController::class, 'store']);
-    });
+Level 100: Customer
+    ├── Browse products
+    ├── Manage cart
+    ├── Checkout
+    └── View own orders
 ```
 
 ---
 
-## 📝 Migration Naming Convention
+## 🎯 Sprint Progress
 
-When creating migrations, follow this pattern:
+### 🟢 Sprint 1-2: Foundation (COMPLETED)
+
+**Focus**: Core authentication and basic user management
+
+| Feature | Backend | Admin UI | Customer UI | Status |
+|---------|---------|----------|-------------|--------|
+| Authentication | ✅ | ✅ | ✅ | ✅ Complete |
+| Users Module | ✅ | ✅ | 🚧 | 🚧 Partial |
+
+**Completed:**
+- ✅ Login/Register pages with matching theme
+- ✅ Role-based redirect (Admin/Customer routing)
+- ✅ JWT authentication via Sanctum
+- ✅ Protected routes via Next.js proxy
+- ✅ Zustand auth store with persistence
+
+---
+
+### 🟢 Sprint 3: Product Catalog (COMPLETED)
+
+**Focus**: Products and Categories with full CRUD
+
+| Feature | Backend | Admin UI | Customer UI | Status |
+|---------|---------|----------|-------------|--------|
+| Categories | ✅ | ✅ | ✅ | ✅ Complete |
+| Products | ✅ | ✅ | ✅ | ✅ Complete |
+
+**Completed:**
+- ✅ Product listing page with filters
+- ✅ Product detail page with related products
+- ✅ Category browsing pages
+- ✅ Search functionality
+- ✅ Consistent brand theme across all pages
+
+---
+
+### 🟡 Sprint 4: Customer Identity (IN PROGRESS)
+
+**Focus**: Customer registration and profile
+
+| Task | Priority | Est. Time | Status |
+|------|----------|-----------|--------|
+| Customer registration | 🔴 High | Completed | ✅ Done |
+| Customer profile page | 🟠 Medium | 2-3 hours | ❌ Pending |
+| Address management | 🟠 Medium | 5-6 hours | ❌ Pending |
+
+---
+
+### 🟢 Sprint 5: Cart System (NEXT)
+
+**Focus**: Shopping cart functionality
+
+| Component | Backend | Admin UI | Customer UI | Status |
+|-----------|---------|----------|-------------|--------|
+| Cart API | TBD | N/A | TBD | ❌ Not started |
+| Cart Page | N/A | N/A | TBD | ❌ Not started |
+| Add/Remove Items | TBD | N/A | TBD | ❌ Not started |
+
+**Estimated Time**: 3-4 days
+
+---
+
+### 🟢 Sprint 6: Orders & Checkout
+
+**Focus**: Order management and checkout flow
+
+| Component | Backend | Admin UI | Customer UI | Status |
+|-----------|---------|----------|-------------|--------|
+| Checkout API | TBD | N/A | TBD | ❌ Not started |
+| Order Management | TBD | TBD | TBD | ❌ Not started |
+| Order History | TBD | N/A | TBD | ❌ Not started |
+
+**Estimated Time**: 4-5 days
+
+---
+
+### 🔵 Sprint 7+: Polish & Scale
+
+**Estimated Time**: Ongoing
+
+| Feature | Priority |
+|---------|----------|
+| Dashboard Analytics | 🟠 Medium |
+| Inventory Management | 🟠 Medium |
+| Reports & Export | 🟢 Low |
+| Coupons & Promotions | 🟢 Low |
+| Settings & Configuration | 🟢 Low |
+
+---
+
+## 🔄 Feature Completion Pattern
+
+Every feature follows this pattern:
+
+```
+1. Database Design
+   ↓
+2. Backend API (Laravel)
+   ├── List/Show endpoints
+   ├── Create/Update endpoints (admin)
+   └── Delete endpoints (admin)
+   ↓
+3. Admin UI
+   ├── List page with table
+   ├── Create/Edit form
+   └── Delete confirmation
+   ↓
+4. Customer UI
+   ├── Browse/View pages
+   ├── Search/Filter
+   └── Detail pages
+   ↓
+5. Integration Testing
+   ↓
+✅ Feature Complete
+```
+
+---
+
+## 📈 Progress Tracking
+
+### Overall Progress: 55%
+
+```
+Authentication        [████████████████████] 100% (Complete)
+Products              [████████████████████] 100% (Complete)
+Categories            [████████████████████] 100% (Complete)
+Users                 [████████████████░░░░]  75% (Profile pending)
+Cart                  [░░░░░░░░░░░░░░░░░░░░]   0%
+Orders                [░░░░░░░░░░░░░░░░░░░░]   0%
+```
+
+### By Component
+
+| Component | Backend | Admin | Customer | Overall |
+|-----------|---------|-------|----------|---------|
+| Auth | ✅ | ✅ | ✅ | ✅ 100% |
+| Products | ✅ | ✅ | ✅ | ✅ 100% |
+| Categories | ✅ | ✅ | ✅ | ✅ 100% |
+| Users | ✅ | ✅ | 🚧 | 🚧 75% |
+| Cart | ❌ | N/A | ❌ | ❌ 0% |
+| Orders | ❌ | ❌ | ❌ | ❌ 0% |
+
+---
+
+## 🎨 Brand Design System
+
+### Color Palette
+```css
+--brand-primary: #2F354F;      /* Dark Navy */
+--brand-dark: #22273A;         /* Darkest Navy */
+--brand-gradient: #282D43;     /* Medium Navy */
+--brand-indigo: #6366f1;      /* Accent Indigo */
+--brand-purple: #a855f7;      /* Accent Purple */
+```
+
+### Applied To
+- ✅ Login/Register pages
+- ✅ Landing page hero
+- ✅ Customer header & footer
+- ✅ Primary buttons
+- ✅ Focus rings
+
+---
+
+## 🎯 Current Sprint: Customer Profile
+
+### Goals
+1. Create customer profile page
+2. Implement order history
+3. Add address management
+
+### Definition of Done
+- [ ] Customer can view profile
+- [ ] Customer can update profile
+- [ ] Customer can manage addresses
+- [ ] Customer can view order history
+- [ ] All forms have validation
+
+---
+
+## 📚 Reference Documentation
+
+- **Completed Features**: See [completed-features.md](./completed-features.md)
+- **Pending Work**: See [pending-features.md](./pending-features.md)
+- **Project Guide**: See [../CLAUDE.md](../CLAUDE.md)
+
+---
+
+## 🚀 Quick Start Commands
 
 ```bash
-# Format: YYYY_MM_DD_HHMMSS_description_table.php
-php artisan make:migration create_{table}_table
-
-# Examples:
-php artisan make:migration create_users_table
-php artisan make:migration create_roles_table
-php artisan make:migration create_products_table
-```
-
----
-
-## 🔄 Cross-Service Communication
-
-### Authentication Flow
-
-```
-┌─────────┐                 ┌──────────────┐                ┌──────────┐
-│ Next.js │ ──(login)────▶ │   Laravel    │ ──(token)────▶ │  NestJS  │
-│ Frontend│                 │   API        │                │   API    │
-└─────────┘                 └──────────────┘                └──────────┘
-                                   │                               │
-                            ┌──────┴──────┐                 ┌──────┴──────┐
-                            │ PostgreSQL  │◀───────────────▶│  Validate   │
-                            │ Database    │                 │   Token     │
-                            └─────────────┘                 └─────────────┘
-```
-
-1. User logs in via Laravel → receives JWT token
-2. Frontend stores token
-3. Frontend sends token with requests to both Laravel and NestJS
-4. Both services validate the same token
-
----
-
-## 🎯 Quick Start: Phase 1 Commands
-
-```bash
-# Navigate to Laravel API
+# Start Backend
 cd apps/laravel-api
+php artisan serve
 
-# Create Phase 1 migrations
-php artisan make:migration create_roles_table
-php artisan make:migration create_user_roles_table
+# Start Frontend
+cd apps/frontend
+npm run dev
 
-# Run migrations
-php artisan migrate
+# Run Tests
+cd apps/laravel-api
+php artisan test
 
-# Create controllers
-php artisan make:controller Auth/AuthController
-php artisan make:controller Admin/UserController
-
-# Test the API
-php artisan serve --host=0.0.0.0 --port=8000
+# Database Migrations
+php artisan migrate:fresh
 ```
 
 ---
 
-## 📚 Next Steps
-
-**Current Status:** 🔨 **Working on Phase 3 - Admin Frontend**
-
-### Completed ✅
-- **Phase 1:** Authentication & Users backend (JWT, roles, permissions)
-- **Phase 2:** Product Catalog backend (categories, products, CRUD APIs)
-
-### In Progress 🚧
-- **Phase 3:** Admin Frontend
-  - Next.js project setup
-  - Admin authentication flow
-  - Dashboard
-  - Category management UI
-  - Product management UI
-  - User management UI
-
-### Upcoming 📋
-- **Phase 4:** Shopping Cart (NestJS service)
-- **Phase 5:** Orders & Payments (NestJS service)
-- **Phase 6:** Customer Frontend
-
-### Immediate Tasks (Phase 3)
-
-1. **Setup Next.js Frontend**
-   - Initialize Next.js with TypeScript
-   - Configure TailwindCSS + shadcn/ui
-   - Setup environment variables for API URLs
-   - Configure axios/fetch for API calls
-
-2. **Build Auth Flow**
-   - Login page with JWT handling
-   - Protected route middleware
-   - Logout functionality
-   - Token persistence (httpOnly cookies)
-
-3. **Build Admin Layout**
-   - Sidebar navigation
-   - Header with user info
-   - Responsive layout
-
-4. **Build Dashboard**
-   - Stats cards (products, categories, users count)
-   - Recent activity
-
-5. **Build Category Management**
-   - List view with search/filter
-   - Create/edit form
-   - Delete confirmation
-
-6. **Build Product Management**
-   - List view with search/filter
-   - Create/edit form
-   - Delete confirmation
-
-7. **Build User Management (SuperAdmin only)**
-   - List view
-   - Create admin user form
-   - Role assignment
-
----
-
-## 🔗 Related Documentation
-
-- [Laravel Sanctum Documentation](https://laravel.com/docs/sanctum)
-- [NestJS Microservices](https://docs.nestjs.com/microservices)
-- [MikroORM Documentation](https://mikro-orm.io/docs/overview)
-- [PostgreSQL with Laravel](https://laravel.com/docs/database)
-
----
-
-*Last Updated: 2026-07-06*
+*Last Updated: 2026-07-24*
+*Approach: Feature-Driven Development*
+*Overall Progress: 55%*
