@@ -19,8 +19,8 @@ import type { NextRequest } from 'next/server';
  */
 
 // Define protected and public routes
-const protectedRoutes = ['/admin'];
-const publicRoutes = ['/login'];
+const protectedRoutes = ['/admin', '/profile'];
+const publicRoutes = ['/login', '/register', '/products', '/categories', '/search', '/cart'];
 
 // Role-based protected routes (SuperAdmin only)
 const superAdminRoutes = ['/admin/users'];
