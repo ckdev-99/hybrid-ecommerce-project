@@ -1,3 +1,5 @@
+'use client';
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -5,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { productsApi } from '@/lib/api';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
+import type { Product } from '@/lib/api/products';
 
 interface ProductPageProps {
   params: {
@@ -12,26 +16,76 @@ interface ProductPageProps {
   };
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const productId = Number(params.id);
+export default function ProductPage({ params }: ProductPageProps) {
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFoundError, setNotFoundError] = useState(false);
 
-  if (isNaN(productId)) {
-    notFound();
+  // Handle params that might be a Promise in Next.js 16
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedId = params instanceof Promise ? (await params).id : params.id;
+        const numericId = Number(resolvedId);
+
+        if (isNaN(numericId)) {
+          setNotFoundError(true);
+          setIsLoading(false);
+          return;
+        }
+
+        setIsLoading(true);
+        const productData = await productsApi.getById(numericId);
+        if (!productData || !productData.is_active) {
+          setNotFoundError(true);
+          setIsLoading(false);
+          return;
+        }
+
+        setProduct(productData);
+
+        // Fetch related products from the same category
+        if (productData.category_id) {
+          const relatedData = await productsApi.getAll({
+            category_id: productData.category_id,
+            is_active: true,
+            per_page: 4,
+          });
+          setRelatedProducts(relatedData.products.filter((p) => p.id !== productData.id));
+        }
+      } catch (error) {
+        console.error('Failed to fetch product:', error);
+        setNotFoundError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-muted mb-4 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="aspect-square bg-muted rounded-lg" />
+            <div className="space-y-4">
+              <div className="h-8 bg-muted w-3/4" />
+              <div className="h-4 bg-muted w-1/2" />
+              <div className="h-6 bg-muted w-1/4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  const product = await productsApi.getById(productId).catch(() => null);
-
-  if (!product || !product.is_active) {
+  if (notFoundError || !product) {
     notFound();
   }
-
-  // Fetch related products from the same category
-  const relatedProducts = product.category_id
-    ? await productsApi
-        .getAll({ category_id: product.category_id, is_active: true, per_page: 4 })
-        .then((data) => data.products.filter((p) => p.id !== product.id))
-        .catch(() => [])
-    : [];
 
   const imageUrl = product.primaryImage?.url || product.images?.[0]?.url || '/placeholder-product.jpg';
   const imageAlt = product.primaryImage?.alt || product.images?.[0]?.alt || product.name || 'Product image';
@@ -130,10 +184,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <span className="text-3xl font-bold">
               ${product.price.toFixed(2)}
             </span>
-            {hasDiscount && (
+            {hasDiscount && product.compare_price && (
               <>
                 <span className="text-xl text-muted-foreground line-through">
-                  ${product.compare_price?.toFixed(2)}
+                  ${product.compare_price.toFixed(2)}
                 </span>
                 <span className="bg-red-500 text-white px-2 py-1 rounded-md text-sm font-medium">
                   Save {discountPercent}%

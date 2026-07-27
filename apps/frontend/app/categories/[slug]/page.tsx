@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ProductGrid } from '@/components/customer/ProductCard';
 import { categoriesApi, productsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import type { Category } from '@/lib/api/categories';
 
 interface CategoryPageProps {
   params: {
@@ -16,7 +17,7 @@ interface CategoryPageProps {
 }
 
 // Find category by slug across all categories
-function findCategoryBySlug(categories: any[], slug: string): any {
+function findCategoryBySlug(categories: Category[], slug: string): Category | null {
   for (const category of categories) {
     if (category.slug === slug) {
       return category;
@@ -49,7 +50,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     .catch(() => ({ products: [] }));
 
   // Fetch subcategories if any
-  const subcategories = category.children?.filter((c: any) => c.is_active) || [];
+  const subcategories = category.children?.filter((c: Category) => c.is_active) || [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -113,7 +114,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <section className="mb-12">
           <h2 className="text-xl font-semibold mb-4">Subcategories</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {subcategories.map((subcategory: any) => (
+            {subcategories.map((subcategory: Category) => (
               <Link
                 key={subcategory.id}
                 href={`/categories/${subcategory.slug}`}
@@ -155,21 +156,24 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             {productsData.products.length} {productsData.products.length === 1 ? 'Product' : 'Products'}
           </h2>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/categories/${category.slug}?sort_by=price&sort_order=asc`}>
-                Price: Low to High
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/categories/${category.slug}?sort_by=price&sort_order=desc`}>
-                Price: High to Low
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/categories/${category.slug}?sort_by=created_at&sort_order=desc`}>
-                Newest
-              </Link>
-            </Button>
+            <Link
+              href={`/categories/${category.slug}?sort_by=price&sort_order=asc`}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            >
+              Price: Low to High
+            </Link>
+            <Link
+              href={`/categories/${category.slug}?sort_by=price&sort_order=desc`}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            >
+              Price: High to Low
+            </Link>
+            <Link
+              href={`/categories/${category.slug}?sort_by=created_at&sort_order=desc`}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            >
+              Newest
+            </Link>
           </div>
         </div>
 

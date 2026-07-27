@@ -7,20 +7,29 @@ import type { NextRequest } from 'next/server';
  * In Next.js 16, proxy.ts replaces middleware.ts for route protection.
  * This proxy protects admin routes by checking for authentication tokens.
  *
+ * Login Flow:
+ * - /login - Customer login (redirects to home after)
+ * - /register - Customer registration
+ * - /admin/login - Admin login (redirects to admin dashboard after)
+ *
  * Protected Routes:
- * - All routes under /admin/* require authentication
+ * - /admin/* (except /admin/login) - Require authentication
+ * - /profile/* - Require authentication
  *
  * Role-Based Protected Routes:
  * - /admin/users - SuperAdmin only
  *
  * Public Routes:
- * - /login - Login page
  * - / - Public home page
+ * - /products, /categories, /search, /cart - Customer pages
  */
 
 // Define protected and public routes
 const protectedRoutes = ['/admin', '/profile'];
-const publicRoutes = ['/login', '/register', '/products', '/categories', '/search', '/cart'];
+const publicRoutes = ['/login', '/register', '/admin/login', '/products', '/categories', '/search', '/cart'];
+
+// Special login routes that should redirect authenticated users
+const loginRoutes = ['/login', '/admin/login'];
 
 // Role-based protected routes (SuperAdmin only)
 const superAdminRoutes = ['/admin/users'];
@@ -29,14 +38,18 @@ export const proxy = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
 
   // Check if the current path is protected
+  // /admin/login is NOT protected (public access for admins to login)
   const isProtectedRoute = protectedRoutes.some(route =>
-    pathname.startsWith(route)
+    pathname.startsWith(route) && pathname !== '/admin/login'
   );
 
   // Check if the current path is public
   const isPublicRoute = publicRoutes.some(route =>
-    pathname === route
+    route === pathname || pathname.startsWith(route)
   );
+
+  // Check if current path is a login route
+  const isLoginRoute = loginRoutes.includes(pathname);
 
   // Get the auth token from cookies (set by Zustand store)
   const authToken = request.cookies.get('auth-token')?.value;
@@ -64,14 +77,28 @@ export const proxy = (request: NextRequest) => {
 
   // Redirect unauthenticated users trying to access protected routes
   if (isProtectedRoute && !isAuthenticated) {
+    // If trying to access admin pages, redirect to admin login
+    if (pathname.startsWith('/admin')) {
+      const redirectUrl = new URL('/admin/login', request.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+    // Otherwise redirect to customer login
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect authenticated users trying to access login page
-  if (isPublicRoute && isAuthenticated && pathname === '/login') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  // Redirect authenticated users trying to access login pages
+  if (isAuthenticated && isLoginRoute) {
+    if (pathname === '/admin/login') {
+      // Admin login → redirect to admin dashboard
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    if (pathname === '/login') {
+      // Customer login → redirect to home
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
 
   // Check SuperAdmin routes

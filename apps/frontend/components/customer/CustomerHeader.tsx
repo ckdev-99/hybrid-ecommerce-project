@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,13 +12,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/lib/store';
+import { useCartStore } from '@/lib/store/cart';
 import { authApi } from '@/lib/api/auth';
 import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
+import { ShoppingBag, Search } from 'lucide-react';
 
 export function CustomerHeader() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { cart, fetchCart } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch cart on mount
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,33 +47,19 @@ export function CustomerHeader() {
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <CommerceBridgeLogo size={40} className="text-white" variant="horizontal" />
+            <CommerceBridgeLogo size={40} className="text-white" variant="icon" />
           </Link>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex-1 max-w-md hidden sm:block">
             <div className="relative">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <Input
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+              <input
                 type="search"
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 h-10"
+                className="w-full h-10 pl-10 pr-4 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all"
               />
             </div>
           </form>
@@ -89,44 +82,35 @@ export function CustomerHeader() {
             {/* Cart */}
             <Link href="/cart" className="relative">
               <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white/80 hover:bg-white/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="8" cy="21" r="1" />
-                  <circle cx="19" cy="21" r="1" />
-                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-                </svg>
+                <ShoppingBag className="h-5 w-5" />
+                {cart && cart.items_count > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                    {cart.items_count}
+                  </span>
+                )}
               </Button>
             </Link>
 
             {/* User Menu */}
             {user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white/80 hover:bg-white/10">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </Button>
+                <DropdownMenuTrigger
+                  className="h-10 w-10 inline-flex shrink-0 items-center justify-center rounded-md text-white hover:text-white/80 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5 text-sm font-medium">
@@ -188,7 +172,7 @@ export function CustomerHeader() {
                     </svg>
                     Addresses
                   </DropdownMenuItem>
-                  {(user.roles?.some((r: any) => r.level <= 2 && r.level !== 100) ?? false) && (
+                  {(user.roles?.some((r: { level: number }) => r.level <= 2 && r.level !== 100) ?? false) && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => router.push('/admin/dashboard')}>
@@ -257,27 +241,13 @@ export function CustomerHeader() {
         {/* Mobile Search */}
         <form onSubmit={handleSearch} className="pb-4 sm:hidden">
           <div className="relative">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <Input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+            <input
               type="search"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10"
+              className="w-full h-10 pl-10 pr-4 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all"
             />
           </div>
         </form>

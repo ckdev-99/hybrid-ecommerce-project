@@ -150,4 +150,9 @@ class User extends Authenticatable
     {
         return $this->permissions()->where('slug', $permission)->isNotEmpty();
     }
+
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
 }
