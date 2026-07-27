@@ -28,9 +28,9 @@ class ProductResource extends JsonResource
             'compare_price' => $this->compare_price ? (float) $this->compare_price : null,
             'cost_price' => $this->cost_price ? (float) $this->cost_price : null,
             'tax_percent' => (float) $this->tax_percent,
-            'stock_qty' => $this->stock_qty,
+            'quantity' => $this->stock_qty, // Frontend expects 'quantity'
             'low_stock_threshold' => $this->low_stock_threshold,
-            'track_stock' => $this->track_stock,
+            'track_quantity' => $this->track_stock, // Frontend expects 'track_quantity'
             'allow_backorders' => $this->allow_backorders,
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
@@ -55,7 +55,7 @@ class ProductResource extends JsonResource
             // Relationships when loaded
             'category' => CategoryResource::make($this->whenLoaded('category')),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
-            'primary_image' => ProductImageResource::make($this->whenLoaded('primaryImage')),
+            'primaryImage' => ProductImageResource::make($this->whenLoaded('primaryImage')), // Frontend expects 'primaryImage'
         ];
     }
 }

@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, AlertCircle, Shirt, Laptop, Home as HomeIcon, Car } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,8 +24,9 @@ export default function LoginPage() {
     try {
       const response = await authApi.login({ email, password });
 
-      // Customer login - always redirect to home
-      window.location.href = '/';
+      // For admin login, redirect to dashboard regardless of role
+      // (Admin users can access dashboard, customers will be redirected by middleware if not authorized)
+      window.location.href = '/admin/dashboard';
     } catch {
       setError('Login failed. Please check your credentials.');
       setLoading(false);
@@ -33,7 +34,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen h-[90dvh] flex flex-col lg:flex-row">
+    <div className="min-h-screen h-[90dvh] flex flex-col lg:flex-row bg-slate-50">
       {/* Left Side - Login Form */}
       <div className="w-full lg:w-1/2 xl:w-5/12 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
         <div className="w-full max-w-md">
@@ -45,8 +46,8 @@ export default function LoginPage() {
           {/* Form */}
           <div className="space-y-8">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-3">Welcome back</h1>
-              <p className="text-slate-600">Sign in to access your account</p>
+              <h1 className="text-3xl font-bold text-slate-900 mb-3">Admin Login</h1>
+              <p className="text-slate-600">Sign in to access your admin dashboard</p>
             </div>
 
             {error && (
@@ -68,7 +69,7 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="admin@commercebridge.com"
                     className="pl-12 h-12 border-slate-300 focus:border-slate-400 focus:ring-slate-200"
                     required
                   />
@@ -113,31 +114,28 @@ export default function LoginPage() {
                     Signing in...
                   </span>
                 ) : (
-                  'Sign in to account'
+                  'Sign in to Admin Dashboard'
                 )}
               </Button>
             </form>
 
             <div className="pt-6 border-t border-slate-200 space-y-4">
               <p className="text-center text-sm text-slate-600">
-                Don't have an account?{' '}
-                <a href="/register" className="font-semibold hover:underline" style={{ color: '#2F354F' }}>
-                  Create a new account
+                Not an admin?{' '}
+                <a href="/login" className="font-semibold hover:underline" style={{ color: '#2F354F' }}>
+                  Customer Login
                 </a>
               </p>
               <p className="text-center text-sm text-slate-500">
-                <a href="/admin/login" className="hover:underline">
-                  Admin login
-                </a>
-                {' '}• Secured by enterprise-grade encryption
+                Secured by enterprise-grade encryption
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Brand/Product Showcase */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 relative overflow-hidden" style={{ backgroundColor: '#22273A' }}>
+      {/* Right Side - Admin/Branding */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 relative overflow-hidden" style={{ backgroundColor: '#2F354F' }}>
         {/* Top section gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#2F354F] via-[#282D43] to-[#22273A]"></div>
 
@@ -161,77 +159,69 @@ export default function LoginPage() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur rounded-full border border-white/10 mb-8">
               <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              <span className="text-white/70 text-sm font-medium">CommerceBridge Portal v1.0</span>
+              <span className="text-white/70 text-sm font-medium">Admin Portal v1.0</span>
             </div>
 
             <h2 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
-              Manage Your
+              CommerceBridge
               <span className="block text-indigo-300">
-                Multi-Category Store
+                Admin Dashboard
               </span>
             </h2>
             <p className="text-lg text-white/70 mb-12 max-w-2xl mx-auto">
-              Complete control over electronics, fashion, home goods, automotive & more. One platform for all your ecommerce needs.
+              Complete control over your e-commerce platform. Manage products, categories, users, and orders from one powerful admin interface.
             </p>
 
-            {/* Category Cards */}
+            {/* Feature Cards */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
-              <div className="group p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-blue-400/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Laptop className="w-6 h-6 text-blue-300" />
-                  </div>
-                  <span className="text-white font-semibold">Electronics</span>
-                </div>
-                <p className="text-white/50 text-sm">Gadgets & devices</p>
+              <div className="p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-white mb-1">1000+</div>
+                <div className="text-white/50 text-sm">Products</div>
               </div>
 
-              <div className="group p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-pink-400/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Shirt className="w-6 h-6 text-pink-300" />
-                  </div>
-                  <span className="text-white font-semibold">Fashion</span>
-                </div>
-                <p className="text-white/50 text-sm">Clothing & accessories</p>
+              <div className="p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-white mb-1">50+</div>
+                <div className="text-white/50 text-sm">Categories</div>
               </div>
 
-              <div className="group p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-emerald-400/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <HomeIcon className="w-6 h-6 text-emerald-300" />
-                  </div>
-                  <span className="text-white font-semibold">Home & Living</span>
-                </div>
-                <p className="text-white/50 text-sm">Furniture & decor</p>
+              <div className="p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-white mb-1">500+</div>
+                <div className="text-white/50 text-sm">Users</div>
               </div>
 
-              <div className="group p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-orange-400/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Car className="w-6 h-6 text-orange-300" />
-                  </div>
-                  <span className="text-white font-semibold">Automotive</span>
-                </div>
-                <p className="text-white/50 text-sm">Parts & accessories</p>
+              <div className="p-5 bg-white/5 backdrop-blur rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-white mb-1">24/7</div>
+                <div className="text-white/50 text-sm">Support</div>
               </div>
             </div>
 
-            {/* Stats Row */}
-            <div className="flex flex-wrap gap-8 justify-center">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">1000+</span>
-                <span className="text-white/50">Products</span>
+            {/* Admin Features */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 px-4 py-3 bg-white/5 backdrop-blur rounded-lg border border-white/10">
+                <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <span className="text-white/80 text-sm font-medium">Analytics Dashboard</span>
               </div>
-              <div className="w-px h-12 bg-white/10"></div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">50+</span>
-                <span className="text-white/50">Categories</span>
+
+              <div className="flex items-center gap-3 px-4 py-3 bg-white/5 backdrop-blur rounded-lg border border-white/10">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <span className="text-white/80 text-sm font-medium">Secure Platform</span>
               </div>
-              <div className="w-px h-12 bg-white/10"></div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">24/7</span>
-                <span className="text-white/50">Support</span>
+
+              <div className="flex items-center gap-3 px-4 py-3 bg-white/5 backdrop-blur rounded-lg border border-white/10">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <span className="text-white/80 text-sm font-medium">Lightning Fast</span>
               </div>
             </div>
           </div>

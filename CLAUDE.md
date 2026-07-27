@@ -1,6 +1,17 @@
-# Hybrid E-commerce Project - Admin Dashboard
+# CommerceBridge - E-commerce Platform
 
-A full-stack e-commerce platform with a Laravel API backend and Next.js 16 frontend, featuring a multi-category store admin panel.
+A full-stack e-commerce platform with a Laravel API backend and Next.js 16 frontend, featuring a multi-category store with admin panel and customer storefront.
+
+## 🏷️ Brand
+
+**Platform Name:** CommerceBridge
+**Tagline:** Bridging Commerce to You
+**Brand Colors:** Dark Navy theme (#2F354F, #22273A, #282D43)
+
+**Logo Component:** `CommerceBridgeLogo` - Three variants available:
+- `icon` - Icon only (for headers)
+- `horizontal` - Icon + "CommerceBridge" + "E-commerce Platform"
+- `full` - Icon + "CommerceBridge" + "Bridging Commerce to You"
 
 ## Architecture
 
@@ -26,17 +37,17 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 - Middleware for authentication and role-level protection
 
 **Frontend (Next.js):**
-- Login page at `/login` with beautiful UI
-- Admin layout with sidebar navigation
-- Dashboard at `/admin/dashboard` with real-time stats from API
-- Zustand auth store with persistence
-- API client with axios and auth token injection
-- shadcn/ui components integrated
-- API client functions for products, categories, and users
-- Next.js proxy for route protection and role-based access
-- **NEW:** Categories management page with full CRUD
-- **NEW:** Products management page with full CRUD
-- **NEW:** Users management page with role management (SuperAdmin only)
+- **Branding:** CommerceBridge logo and name across all pages
+- **Authentication:** Login page at `/login` with beautiful UI, redirects by role
+- **Customer Profile:** `/profile`, `/profile/orders`, `/profile/addresses` pages
+- **Admin Layout:** Sidebar navigation with `/admin/dashboard`, Categories, Products, Users
+- **Customer Header:** Search, Products, Categories, Cart, User menu
+- **Customer Footer:** Shop links, Account links, Contact info
+- **Layout System:** ConditionalLayout properly separates customer/admin/auth pages
+- **Zustand:** Auth store with persistence and proper cookie handling
+- **API Client:** Axios with auth token injection
+- **shadcn/ui:** Components integrated with Badge, Button, Card, Input, etc.
+- **Route Protection:** Next.js proxy for authentication and role-based access
 
 ### 🚧 Future Enhancements
 
@@ -48,7 +59,8 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 5. Add export functionality (CSV, Excel)
 6. Implement audit logs for tracking changes
 7. Add email notifications for important events
-8. Create customer-facing storefront pages
+8. Complete shopping cart and checkout flow
+9. Order management and tracking
 
 ## Key Files
 
@@ -71,8 +83,17 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 
 **Pages:**
 - `apps/frontend/app/login/page.tsx` - Login page
+- `apps/frontend/app/register/page.tsx` - Registration page
+- `apps/frontend/app/page.tsx` - Landing/home page
 - `apps/frontend/app/admin/layout.tsx` - Admin layout with sidebar
 - `apps/frontend/app/admin/dashboard/page.tsx` - Dashboard
+- `apps/frontend/app/profile/page.tsx` - User profile
+- `apps/frontend/app/profile/orders/page.tsx` - Order history
+- `apps/frontend/app/profile/addresses/page.tsx` - Address management
+
+**Layout System:**
+- `apps/frontend/app/layout.tsx` - Root layout with ConditionalLayout
+- `apps/frontend/components/ConditionalLayout.tsx` - Smart layout that renders customer header/footer only on appropriate pages
 
 **Libraries:**
 - `apps/frontend/lib/store.ts` - Zustand auth store
@@ -81,16 +102,19 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 - `apps/frontend/lib/api/products.ts` - Products API functions
 - `apps/frontend/lib/api/categories.ts` - Categories API functions
 - `apps/frontend/lib/api/users.ts` - Users API functions
-- `apps/frontend/lib/api/index.ts` - Central API exports
 - `apps/frontend/proxy.ts` - Route protection proxy (Next.js 16)
 
 **Components:**
+- `apps/frontend/components/CommerceBridgeLogo.tsx` - Branded logo component
+- `apps/frontend/components/customer/CustomerHeader.tsx` - Customer navigation header
+- `apps/frontend/components/customer/CustomerFooter.tsx` - Customer footer
 - `apps/frontend/components/ui/` - shadcn/ui components
 
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
 - `POST /api/auth/logout` - User logout (protected)
 - `GET /api/auth/me` - Get current user (protected)
 
@@ -104,13 +128,15 @@ A full-stack e-commerce platform with a Laravel API backend and Next.js 16 front
 ### Categories
 - `GET /api/categories` - List categories (public)
 - `GET /api/categories/tree` - Get category tree (public)
-- `POST /api/admin/store/categories` - Create category (admin, level 2+)
-- `PUT /api/admin/update/categories/{id}` - Update category (admin, level 2+)
-- `DELETE /api/admin/delete/categories/{id}` - Delete category (admin, level 2+)
+- `POST /api/admin/categories` - Create category (admin, level 2+)
+- `PUT /api/admin/categories/{id}` - Update category (admin, level 2+)
+- `DELETE /api/admin/categories/{id}` - Delete category (admin, level 2+)
 
 ### Users
 - `GET /api/users` - List users (admin)
 - `GET /api/users/{id}` - Get user details (admin)
+- `PUT /api/admin/users/{id}` - Update user (admin)
+- `DELETE /api/admin/users/{id}` - Delete user (SuperAdmin only)
 
 ## Environment Variables
 
@@ -154,15 +180,29 @@ await usersApi.update(1, { is_active: false });
 await usersApi.updateRoles(1, [1, 2]); // Update user roles
 ```
 
-### Proxy Protection
+### Logo Component
 
-The Next.js 16 proxy automatically:
-- Protects all `/admin/*` routes (requires authentication)
-- Redirects unauthenticated users to `/login`
-- Redirects authenticated `/login` visitors to `/admin/dashboard`
-- Restricts `/admin/users` to SuperAdmin only
+```typescript
+import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
 
-No additional configuration needed - just import and use the API functions in your components!
+// Icon only (for headers)
+<CommerceBridgeLogo size={40} variant="icon" />
+
+// Horizontal with text
+<CommerceBridgeLogo size={40} variant="horizontal" />
+
+// Full layout
+<CommerceBridgeLogo size={60} variant="full" />
+```
+
+### Layout System
+
+The ConditionalLayout automatically:
+- Shows **CustomerHeader + CustomerFooter** on customer pages (home, products, categories, profile, etc.)
+- Shows **NO header/footer** on admin pages (admin has its own layout)
+- Shows **NO header/footer** on auth pages (login, register - clean, focused pages)
+
+No additional configuration needed - just render your page components normally!
 
 ## Development
 
@@ -181,18 +221,43 @@ npm run dev
 ## Role-Based Access Control
 
 **Role Levels:**
-- Level 1: Customer
+- Level 1: SuperAdmin (highest access)
 - Level 2: Admin
-- Level 3: SuperAdmin
+- Level 100: Customer (default)
 
 **Protected Routes:**
 - All `/admin/*` routes require authentication
 - Users page requires SuperAdmin role
 - Product and Category management require Level 2+
+- Profile pages require authentication
+
+**Route Protection:**
+- The proxy protects routes and redirects unauthenticated users to `/login`
+- After login, users are redirected based on their role (Admin → `/admin/dashboard`, Customer → `/`)
+
+## Theme & Brand Colors
+
+```css
+/* CommerceBridge Brand Colors */
+--brand-primary: #2F354F;      /* Dark Navy - Logo, Buttons, Headers */
+--brand-dark: #22273A;         /* Darkest Navy - Backgrounds, Footer */
+--brand-gradient: #282D43;     /* Medium Navy - Gradients */
+```
+
+**Used In:**
+- Customer header background
+- Login page right panel
+- Admin header background
+- Footer background (slightly lighter)
+- Buttons and accents
 
 ## Notes
 
-- The login page is at `/login` (not `/admin/login`)
-- After successful login, users are redirected to `/admin/dashboard`
-- Auth token is stored in Zustand with localStorage persistence
+- The platform is branded as **CommerceBridge** throughout
+- Login page is at `/login` (clean, no header/footer)
+- Admin panel is at `/admin/*` (has its own header/sidebar)
+- Customer pages have shared header with search, navigation, cart
+- Profile pages (`/profile/*`) require authentication
+- Logout redirects to `/login` with proper state clearing
+- Auth token is stored in Zustand with cookie persistence
 - Axios interceptor automatically adds Bearer token to requests

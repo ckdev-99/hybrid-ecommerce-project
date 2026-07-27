@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/store';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api/auth';
 import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
@@ -26,6 +26,11 @@ export default function AdminLayout({
   const { user } = useAuthStore();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Don't render admin layout (header/sidebar) on login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
   const handleLogout = async () => {
     await authApi.logout();

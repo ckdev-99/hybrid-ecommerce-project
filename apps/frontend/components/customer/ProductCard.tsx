@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -77,15 +79,20 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Button
-          asChild
-          className="w-full"
-          disabled={isOutOfStock}
+        <Link
+          href={`/products/${product.id}`}
+          className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-10 px-4 py-2 w-full ${
+            isOutOfStock
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-[#2F354F] text-white hover:bg-[#22273A] hover:opacity-90'
+          }`}
+          aria-disabled={isOutOfStock}
+          onClick={(e) => {
+            if (isOutOfStock) e.preventDefault();
+          }}
         >
-          <Link href={`/products/${product.id}`}>
-            {isOutOfStock ? 'Out of Stock' : 'View Details'}
-          </Link>
-        </Button>
+          {isOutOfStock ? 'Out of Stock' : 'View Details'}
+        </Link>
       </CardFooter>
     </Card>
   );
