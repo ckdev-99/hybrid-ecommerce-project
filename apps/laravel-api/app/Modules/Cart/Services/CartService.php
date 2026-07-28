@@ -9,20 +9,13 @@ class CartService
     /**
      * Get or create cart for user or session.
      */
-    public function getOrCreateCart(?User $user, ?string $sessionId): Cart
+    public function getOrCreateCart(?User $user): Cart
     {
-        $cart = null;
-
-        if ($user) {
-            $cart = Cart::where('user_id', $user->id)->first();
-        } elseif ($sessionId) {
-            $cart = Cart::where('session_id', $sessionId)->first();
-        }
+        $cart = Cart::where('user_id', $user->id)->first();
 
         if (!$cart) {
             $cart = Cart::create([
                 'user_id' => $user?->id,
-                'session_id' => $sessionId,
             ]);
         }
 
@@ -64,8 +57,7 @@ class CartService
         $item = $cart->items()->create([
             'product_id' => $product->id,
             'quantity' => $quantity,
-            'unit_price' => $product->price,
-            'total' => $product->price * $quantity,
+            'price' => $product->price,
         ]);
 
         // Recalculate cart totals
@@ -81,7 +73,6 @@ class CartService
     {
         $item->update([
             'quantity' => $quantity,
-            'total' => $item->unit_price * $quantity,
         ]);
 
         // Recalculate cart totals
@@ -115,49 +106,16 @@ class CartService
     }
 
     /**
-     * Merge guest cart into user cart.
-     */
-    public function mergeGuestCart(Cart $guestCart, User $user): Cart
-    {
-        // Get or create user cart
-        $userCart = $this->getOrCreateCart($user, null);
-
-        foreach ($guestCart->items as $guestItem) {
-            $existingItem = $userCart->items()
-                ->where('product_id', $guestItem->product_id)
-                ->first();
-
-            if ($existingItem) {
-                // Update quantity
-                $this->updateItemQuantity($existingItem, $existingItem->quantity + $guestItem->quantity);
-            } else {
-                // Add new item to user cart
-                $userCart->items()->create([
-                    'product_id' => $guestItem->product_id,
-                    'quantity' => $guestItem->quantity,
-                    'unit_price' => $guestItem->unit_price,
-                    'total' => $guestItem->total,
-                ]);
-            }
-        }
-
-        // Delete guest cart
-        $guestCart->delete();
-
-        // Recalculate user cart totals
-        $this->calculateTotals($userCart);
-
-        return $userCart->fresh('items.product');
-    }
-
-    /**
      * Calculate and update cart totals.
      */
     public function calculateTotals(Cart $cart): Cart
     {
         $items = $cart->items()->get();
 
-        $subtotal = $items->sum('total');
+        // Calculate subtotal by summing (price * quantity) for each item
+        $subtotal = $items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
         $itemsCount = $items->sum('quantity');
 
         // Calculate tax (10% for example - adjust as needed)

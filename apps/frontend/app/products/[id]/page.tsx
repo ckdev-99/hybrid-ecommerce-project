@@ -8,7 +8,9 @@ import { productsApi } from '@/lib/api';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
+import { useCartStore } from '@/lib/store/cart';
 import type { Product } from '@/lib/api/products';
+import { toast } from 'sonner';
 
 interface ProductPageProps {
   params: {
@@ -21,6 +23,10 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  const { addItem, fetchCart } = useCartStore();
 
   // Handle params that might be a Promise in Next.js 16
   useEffect(() => {
@@ -65,6 +71,23 @@ export default function ProductPage({ params }: ProductPageProps) {
     resolveParams();
   }, [params]);
 
+  const handleAddToCart = async () => {
+    if (!product || isOutOfStock) return;
+
+    setIsAddingToCart(true);
+
+    try {
+      await addItem(product.id, quantity);
+      await fetchCart();
+      toast.success('Added to cart!');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast.error('Failed to add to cart');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -93,7 +116,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const isOutOfStock = product.track_quantity && product.quantity <= 0;
   const hasDiscount = product.compare_price && product.compare_price > product.price;
   const discountPercent = hasDiscount
-    ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100)
+    ? Math.round(((product.compare_price! - product.price) / product.compare_price!) * 100)
     : 0;
 
   return (
@@ -252,31 +275,65 @@ export default function ProductPage({ params }: ProductPageProps) {
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-4">
-            <Button
-              size="lg"
-              className="flex-1"
-              disabled={isOutOfStock}
-            >
-              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-            </Button>
-            <Button size="lg" variant="outline">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-2"
+          <div className="space-y-4">
+            {/* Quantity Selector */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">Quantity:</span>
+              <div className="flex items-center border rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1 || isAddingToCart}
+                  className="w-10 h-10 flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  className="w-16 h-10 text-center border-0 focus:ring-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity(quantity + 1)}
+                  disabled={isAddingToCart}
+                  className="w-10 h-10 flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-4">
+              <Button
+                size="lg"
+                className="flex-1"
+                disabled={isOutOfStock || isAddingToCart}
+                onClick={handleAddToCart}
               >
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-              Wishlist
-            </Button>
+                {isAddingToCart ? 'Adding...' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+              </Button>
+              <Button size="lg" variant="outline">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-2"
+                >
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+                Wishlist
+              </Button>
+            </div>
           </div>
 
           {/* Features */}

@@ -36,7 +36,7 @@ export const cartApi = {
    * Clear entire cart
    */
   clearCart: () =>
-    api.delete<{ success: boolean; data: { cart: Cart } }>('/cart'),
+    api.delete<{ success: boolean; data: { cart: Cart } }>('/cart/clear'),
 };
 
 // Re-export types

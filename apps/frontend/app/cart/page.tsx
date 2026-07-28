@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useCartStore } from '@/lib/store/cart';
-import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,18 +32,12 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#2F354F] text-white py-4">
+      {/* Page Title */}
+      <div className="bg-[#2F354F] text-white py-6">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <CommerceBridgeLogo size={40} variant="icon" />
-            </Link>
-            <h1 className="text-xl font-semibold">Shopping Cart</h1>
-            <div className="w-10" /> {/* Spacer for balance */}
-          </div>
+          <h1 className="text-2xl font-semibold">Shopping Cart</h1>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
