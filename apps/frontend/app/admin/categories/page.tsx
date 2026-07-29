@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { categoriesApi, Category, CategoryFormData } from '@/lib/api';
+import { Textarea } from '@/components/ui/textarea';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +56,10 @@ export default function CategoriesPage() {
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Image upload state
+  const [categoryImage, setCategoryImage] = useState<File | { url: string; id?: number } | null>(null);
+  const [categoryIcon, setCategoryIcon] = useState<File | { url: string; id?: number } | null>(null);
+
   // Form state
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
@@ -101,6 +107,8 @@ export default function CategoriesPage() {
   }, []);
 
   const resetForm = () => {
+    setCategoryImage(null);
+    setCategoryIcon(null);
     setFormData({
       name: '',
       slug: '',
@@ -114,10 +122,46 @@ export default function CategoriesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.name?.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+    if (!categoryImage) {
+      toast.error('Category image is required');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await categoriesApi.create(formData);
+      // Create FormData for multipart upload
+      const formDataToSend = new FormData();
+
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        const value = formData[key as keyof CategoryFormData];
+        if (value !== undefined && value !== null && value !== '') {
+          if (typeof value === 'boolean') {
+            formDataToSend.append(key, value ? '1' : '0');
+          } else {
+            formDataToSend.append(key, String(value));
+          }
+        }
+      });
+
+      // Add image
+      if (categoryImage instanceof File) {
+        formDataToSend.append('image', categoryImage);
+      }
+
+      // Add icon (optional)
+      if (categoryIcon instanceof File) {
+        formDataToSend.append('icon', categoryIcon);
+      }
+
+      await categoriesApi.createWithImages(formDataToSend);
       toast.success('Category created successfully');
       setIsCreateDialogOpen(false);
       resetForm();
@@ -137,10 +181,50 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!selectedCategory) return;
 
+    // Validate required fields
+    if (!formData.name?.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await categoriesApi.update(selectedCategory.id, formData);
+      // Check if we have new images to upload
+      const hasNewImages = (categoryImage instanceof File) || (categoryIcon instanceof File);
+
+      if (hasNewImages) {
+        // Create FormData for multipart upload
+        const formDataToSend = new FormData();
+
+        // Add all form fields
+        Object.keys(formData).forEach(key => {
+          const value = formData[key as keyof CategoryFormData];
+          if (value !== undefined && value !== null && value !== '') {
+            if (typeof value === 'boolean') {
+              formDataToSend.append(key, value ? '1' : '0');
+            } else {
+              formDataToSend.append(key, String(value));
+            }
+          }
+        });
+
+        // Add image
+        if (categoryImage instanceof File) {
+          formDataToSend.append('image', categoryImage);
+        }
+
+        // Add icon (optional)
+        if (categoryIcon instanceof File) {
+          formDataToSend.append('icon', categoryIcon);
+        }
+
+        await categoriesApi.updateWithImages(selectedCategory.id, formDataToSend);
+      } else {
+        // No new images, just update text fields
+        await categoriesApi.update(selectedCategory.id, formData);
+      }
+
       toast.success('Category updated successfully');
       setIsEditDialogOpen(false);
       setSelectedCategory(null);
@@ -148,7 +232,10 @@ export default function CategoriesPage() {
       fetchCategories();
       fetchParentCategories();
     } catch (error: unknown) {
-      toast.error(error.response?.data?.message || 'Failed to update category');
+      const message = error instanceof Error && 'response' in error
+        ? ((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to update category')
+        : 'Failed to update category';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -175,6 +262,16 @@ export default function CategoriesPage() {
 
   const openEditDialog = (category: Category) => {
     setSelectedCategory(category);
+
+    // Load existing images
+    if (category.image_url) {
+      setCategoryImage({ url: category.image_url });
+    }
+    // Note: icon field might need to be added to Category interface if not present
+    // if (category.icon_url) {
+    //   setCategoryIcon({ url: category.icon_url });
+    // }
+
     setFormData({
       name: category.name,
       slug: category.slug,
@@ -221,7 +318,7 @@ export default function CategoriesPage() {
               </Button>
             }
           />
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
               <DialogDescription>
@@ -253,13 +350,36 @@ export default function CategoriesPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="create-description">Description</Label>
-                  <Input
+                  <Textarea
                     id="create-description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Category description"
+                    rows={3}
                   />
                 </div>
+
+                {/* Image Upload */}
+                <ImageUpload
+                  images={categoryImage ? [categoryImage] : []}
+                  onImagesChange={(images) => setCategoryImage(images[0] || null)}
+                  multiple={false}
+                  maxImages={1}
+                  disabled={submitting}
+                  label="Category Image"
+                  required={true}
+                />
+
+                {/* Icon Upload */}
+                <ImageUpload
+                  images={categoryIcon ? [categoryIcon] : []}
+                  onImagesChange={(images) => setCategoryIcon(images[0] || null)}
+                  multiple={false}
+                  maxImages={1}
+                  disabled={submitting}
+                  label="Category Icon (Optional)"
+                  required={false}
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="create-parent">Parent Category</Label>
@@ -494,7 +614,7 @@ export default function CategoriesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
             <DialogDescription>Update category information</DialogDescription>
@@ -524,13 +644,36 @@ export default function CategoriesPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Description</Label>
-                <Input
+                <Textarea
                   id="edit-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Category description"
+                  rows={3}
                 />
               </div>
+
+              {/* Image Upload */}
+              <ImageUpload
+                images={categoryImage ? [categoryImage] : []}
+                onImagesChange={(images) => setCategoryImage(images[0] || null)}
+                multiple={false}
+                maxImages={1}
+                disabled={submitting}
+                label="Category Image"
+                required={false}
+              />
+
+              {/* Icon Upload */}
+              <ImageUpload
+                images={categoryIcon ? [categoryIcon] : []}
+                onImagesChange={(images) => setCategoryIcon(images[0] || null)}
+                multiple={false}
+                maxImages={1}
+                disabled={submitting}
+                label="Category Icon (Optional)"
+                required={false}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="edit-parent">Parent Category</Label>

@@ -24,8 +24,17 @@ export default function LoginPage() {
     try {
       const response = await authApi.login({ email, password });
 
-      // Customer login - always redirect to home
-      window.location.href = '/';
+      // Check if user has admin roles
+      const isAdmin = response.user.roles?.some(role =>
+        role.slug === 'admin' || role.slug === 'superadmin'
+      );
+
+      // Redirect based on role
+      if (isAdmin) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/';
+      }
     } catch {
       setError('Login failed. Please check your credentials.');
       setLoading(false);

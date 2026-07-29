@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { productsApi, categoriesApi, Product, ProductFormData } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +45,39 @@ import {
   DollarSign,
   Box,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import ImageUpload from '@/components/admin/ImageUpload';
+
+// Zod schema for product validation
+const productSchema = z.object({
+  name: z.string().min(1, 'Product name is required'),
+  slug: z.string().optional(),
+  short_description: z.string().optional(),
+  description: z.string().optional(),
+  category_id: z.number().min(1, 'Category is required'),
+  sku: z.string().min(1, 'SKU is required'),
+  barcode: z.string().optional(),
+  price: z.number().min(0, 'Price must be positive'),
+  compare_price: z.number().optional(),
+  cost_price: z.number().optional(),
+  tax_percent: z.number().optional(),
+  stock_qty: z.number().optional(),
+  low_stock_threshold: z.number().optional(),
+  track_stock: z.boolean().optional(),
+  allow_backorders: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+  is_featured: z.boolean().optional(),
+  weight: z.number().optional(),
+  length: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  brand: z.string().optional(),
+  warranty: z.string().optional(),
+  meta_title: z.string().optional(),
+  meta_description: z.string().optional(),
+});
+
+type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -54,6 +90,10 @@ export default function ProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Image upload state
+  const [productImages, setProductImages] = useState<(File | { url: string; id: number })[]>([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
 
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -117,6 +157,8 @@ export default function ProductsPage() {
   }, []);
 
   const resetForm = () => {
+    setProductImages([]);
+    setPrimaryImageIndex(0);
     setFormData({
       name: '',
       slug: '',
@@ -158,11 +200,40 @@ export default function ProductsPage() {
       toast.error('SKU is required');
       return;
     }
+    if (productImages.length === 0) {
+      toast.error('At least one product image is required');
+      return;
+    }
 
     setSubmitting(true);
 
     try {
-      await productsApi.create(formData);
+      // Create FormData for multipart upload
+      const formDataToSend = new FormData();
+
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        const value = formData[key as keyof ProductFormData];
+        if (value !== undefined && value !== null && value !== '') {
+          if (typeof value === 'boolean') {
+            formDataToSend.append(key, value ? '1' : '0');
+          } else {
+            formDataToSend.append(key, String(value));
+          }
+        }
+      });
+
+      // Add images
+      productImages.forEach((image, index) => {
+        if (image instanceof File) {
+          formDataToSend.append('images[]', image);
+        }
+      });
+
+      // Add primary image index
+      formDataToSend.append('primary_image_index', String(primaryImageIndex));
+
+      await productsApi.createWithImages(formDataToSend);
       toast.success('Product created successfully');
       setIsCreateDialogOpen(false);
       resetForm();
@@ -198,7 +269,43 @@ export default function ProductsPage() {
     setSubmitting(true);
 
     try {
-      await productsApi.update(selectedProduct.id, formData);
+      // Check if we have new images to upload
+      const hasNewImages = productImages.some(img => img instanceof File);
+
+      if (hasNewImages) {
+        // Create FormData for multipart upload
+        const formDataToSend = new FormData();
+
+        // Add all form fields
+        Object.keys(formData).forEach(key => {
+          const value = formData[key as keyof ProductFormData];
+          if (value !== undefined && value !== null && value !== '') {
+            if (typeof value === 'boolean') {
+              formDataToSend.append(key, value ? '1' : '0');
+            } else {
+              formDataToSend.append(key, String(value));
+            }
+          }
+        });
+
+        // Add new images
+        let imageIndex = 0;
+        productImages.forEach((image) => {
+          if (image instanceof File) {
+            formDataToSend.append('images[]', image);
+            imageIndex++;
+          }
+        });
+
+        // Add primary image index
+        formDataToSend.append('primary_image_index', String(primaryImageIndex));
+
+        await productsApi.updateWithImages(selectedProduct.id, formDataToSend);
+      } else {
+        // No new images, just update text fields
+        await productsApi.update(selectedProduct.id, formData);
+      }
+
       toast.success('Product updated successfully');
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
@@ -237,6 +344,23 @@ export default function ProductsPage() {
 
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product);
+
+    // Load existing images
+    if (product.images && product.images.length > 0) {
+      const existingImages = product.images.map(img => ({
+        url: img.url,
+        id: img.id
+      }));
+      setProductImages(existingImages);
+
+      // Find primary image index
+      const primaryIndex = product.images.findIndex(img => img.is_primary);
+      setPrimaryImageIndex(primaryIndex >= 0 ? primaryIndex : 0);
+    } else {
+      setProductImages([]);
+      setPrimaryImageIndex(0);
+    }
+
     setFormData({
       name: product.name,
       slug: product.slug,
@@ -359,13 +483,27 @@ export default function ProductsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="create-description">Description</Label>
-                  <Input
+                  <Textarea
                     id="create-description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Product description"
+                    rows={3}
                   />
                 </div>
+
+                {/* Image Upload */}
+                <ImageUpload
+                  images={productImages}
+                  onImagesChange={setProductImages}
+                  multiple={true}
+                  maxImages={5}
+                  primaryIndex={primaryImageIndex}
+                  onPrimaryChange={setPrimaryImageIndex}
+                  disabled={submitting}
+                  label="Product Images"
+                  required={true}
+                />
 
                 {/* Pricing */}
                 <div className="grid grid-cols-3 gap-4">
@@ -774,12 +912,26 @@ export default function ProductsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Description</Label>
-                <Input
+                <Textarea
                   id="edit-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
                 />
               </div>
+
+              {/* Image Upload */}
+              <ImageUpload
+                images={productImages}
+                onImagesChange={setProductImages}
+                multiple={true}
+                maxImages={5}
+                primaryIndex={primaryImageIndex}
+                onPrimaryChange={setPrimaryImageIndex}
+                disabled={submitting}
+                label="Product Images"
+                required={false}
+              />
 
               {/* Pricing */}
               <div className="grid grid-cols-3 gap-4">

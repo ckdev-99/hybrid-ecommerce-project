@@ -4,6 +4,8 @@ namespace App\Modules\Products\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductService
@@ -111,7 +113,19 @@ class ProductService
             $data['slug'] = Str::slug($data['name']);
         }
 
-        return Product::create($data);
+        // Extract images from data
+        $images = $data['images'] ?? [];
+        $primaryIndex = $data['primary_image_index'] ?? 0;
+        unset($data['images'], $data['primary_image_index']);
+
+        $product = Product::create($data);
+
+        // Handle images
+        if (!empty($images)) {
+            $this->handleProductImages($product, $images, $primaryIndex);
+        }
+
+        return $product->fresh(['category', 'images', 'primaryImage']);
     }
 
     /**
@@ -128,7 +142,28 @@ class ProductService
             $data['slug'] = Str::slug($data['name']);
         }
 
+        // Handle image deletion
+        if (isset($data['delete_images']) && !empty($data['delete_images'])) {
+            $this->deleteProductImages($data['delete_images']);
+            unset($data['delete_images']);
+        }
+
+        // Handle new images
+        $images = $data['images'] ?? [];
+        $primaryIndex = $data['primary_image_index'] ?? null;
+        unset($data['images'], $data['primary_image_index']);
+
         $product->update($data);
+
+        // Handle image uploads
+        if (!empty($images)) {
+            $currentImageCount = $product->images()->count();
+            $this->handleProductImages($product, $images, $primaryIndex ?? $currentImageCount);
+        } elseif ($primaryIndex !== null) {
+            // Update primary image if no new images but index provided
+            $this->updatePrimaryImage($product, $primaryIndex);
+        }
+
         return $product->fresh(['category', 'images', 'primaryImage']);
     }
 
@@ -140,6 +175,12 @@ class ProductService
      */
     public function deleteProduct(Product $product): bool
     {
+        // Delete associated images
+        $imageIds = $product->images()->pluck('id')->toArray();
+        if (!empty($imageIds)) {
+            $this->deleteProductImages($imageIds);
+        }
+
         return $product->delete();
     }
 
@@ -174,5 +215,70 @@ class ProductService
         $categories = Category::select('id', 'name')->get();
 
         return $categories;
+    }
+
+    /**
+     * Handle product image uploads.
+     *
+     * @param  Product  $product
+     * @param  array  $images
+     * @param  int  $primaryIndex
+     * @return void
+     */
+    protected function handleProductImages(Product $product, array $images, int $primaryIndex = 0): void
+    {
+        $uploadPath = 'products/' . $product->id;
+
+        foreach ($images as $index => $image) {
+            $path = $image->store($uploadPath, 'public');
+
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_path' => $path,
+                'alt_text' => $product->name,
+                'sort_order' => $index,
+                'is_primary' => $index === $primaryIndex,
+            ]);
+        }
+    }
+
+    /**
+     * Delete product images and files.
+     *
+     * @param  array  $imageIds
+     * @return void
+     */
+    protected function deleteProductImages(array $imageIds): void
+    {
+        $images = ProductImage::whereIn('id', $imageIds)->get();
+
+        foreach ($images as $image) {
+            if (Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+        }
+
+        ProductImage::whereIn('id', $imageIds)->delete();
+    }
+
+    /**
+     * Update primary image for a product.
+     *
+     * @param  Product  $product
+     * @param  int  $primaryIndex
+     * @return void
+     */
+    protected function updatePrimaryImage(Product $product, int $primaryIndex): void
+    {
+        ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
+
+        $primaryImage = ProductImage::where('product_id', $product->id)
+            ->orderBy('sort_order')
+            ->skip($primaryIndex)
+            ->first();
+
+        if ($primaryImage) {
+            $primaryImage->update(['is_primary' => true]);
+        }
     }
 }

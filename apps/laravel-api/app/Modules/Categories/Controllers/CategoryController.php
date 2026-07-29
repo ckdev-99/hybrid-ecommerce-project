@@ -93,7 +93,13 @@ class CategoryController extends Controller
      */
     public function store(CreateCategoryRequest $request): JsonResponse
     {
-        $category = $this->categoryService->createCategory($request->validated());
+        $data = $request->validated();
+
+        // Handle file uploads
+        $data['image'] = $request->file('image');
+        $data['icon'] = $request->file('icon');
+
+        $category = $this->categoryService->createCategory($data);
 
         return response()->json([
             'success' => true,
@@ -131,7 +137,13 @@ class CategoryController extends Controller
      */
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        $category = $this->categoryService->updateCategory($category, $request->validated());
+        $data = $request->validated();
+
+        // Handle file uploads
+        $data['image'] = $request->file('image');
+        $data['icon'] = $request->file('icon');
+
+        $category = $this->categoryService->updateCategory($category, $data);
 
         return response()->json([
             'success' => true,

@@ -59,4 +59,26 @@ api.interceptors.response.use(
   }
 );
 
+// Helper for multipart/form-data uploads
+export const uploadApi = (url: string, data: FormData, config = {}) => {
+  return api.post(url, data, {
+    ...config,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      ...config.headers,
+    },
+  });
+};
+
+// Helper for PUT multipart requests
+export const uploadApiPut = (url: string, data: FormData, config = {}) => {
+  return api.put(url, data, {
+    ...config,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      ...config.headers,
+    },
+  });
+};
+
 export default api;
