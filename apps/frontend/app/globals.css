@@ -160,3 +160,38 @@
     border-color: var(--brand-primary);
   }
 }
+
+/* Sonner Toast Custom Styles */
+[data-sonner-toast] {
+  background: oklch(1 0 0);
+  color: oklch(0.20 0.01 265);
+  border: 1px solid oklch(0.90 0.005 265);
+}
+
+[data-sonner-toast][data-type="success"] {
+  background: #22c55e !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description],
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: #ffffff !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description],
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: #ffffff !important;
+}
+
+.dark [data-sonner-toast] {
+  background: oklch(0.18 0.02 265);
+  color: oklch(0.95 0 0);
+  border: 1px solid oklch(0.25 0.02 265);
+}

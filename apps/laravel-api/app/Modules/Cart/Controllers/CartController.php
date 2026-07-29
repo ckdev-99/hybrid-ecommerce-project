@@ -50,18 +50,7 @@ class CartController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $sessionId = $request->cookie('cart_session_id');
-        $cart = $this->cartService->getOrCreateCart($request->user(), $sessionId);
-
-        // Store session ID in cookie if it's a guest cart
-        if (!$request->user() && $cart->session_id) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'cart' => CartResource::make($cart),
-                ],
-            ])->cookie('cart_session_id', $cart->session_id, 60 * 24 * 30); // 30 days
-        }
+        $cart = $this->cartService->getOrCreateCart($request->user());
 
         return response()->json([
             'success' => true,
@@ -78,8 +67,8 @@ class CartController extends Controller
      */
     public function addItem(AddItemRequest $request): JsonResponse
     {
-        $sessionId = $request->cookie('cart_session_id');
-        $cart = $this->cartService->getOrCreateCart($request->user(), $sessionId);
+        $user = $request->user(); // Authenticated user
+        $cart = $this->cartService->getOrCreateCart($user);
 
         $product = Product::findOrFail($request->product_id);
         $item = $this->cartService->addItem($cart, $product, $request->quantity);
@@ -91,7 +80,7 @@ class CartController extends Controller
                 'cart' => CartResource::make($cart->fresh('items.product')),
                 'item' => CartItemResource::make($item),
             ],
-        ]);
+        ]);  
     }
 
     /**
@@ -142,8 +131,7 @@ class CartController extends Controller
      */
     public function clearCart(Request $request): JsonResponse
     {
-        $sessionId = $request->cookie('cart_session_id');
-        $cart = $this->cartService->getOrCreateCart($request->user(), $sessionId);
+        $cart = $this->cartService->getOrCreateCart($request->user());
 
         $this->cartService->clearCart($cart);
 
