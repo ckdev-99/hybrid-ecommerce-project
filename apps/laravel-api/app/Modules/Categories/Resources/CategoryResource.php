@@ -20,8 +20,8 @@ class CategoryResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'parent_id' => $this->parent_id,
-            'image' => $this->image,
-            'icon' => $this->icon,
+            'image_url' => $this->image_url, // Uses getImageUrlAttribute() accessor
+            'icon_url' => $this->icon_url, // Uses getIconUrlAttribute() accessor
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
             'sort_order' => $this->sort_order,

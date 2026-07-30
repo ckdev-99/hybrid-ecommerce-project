@@ -47,6 +47,10 @@ class CreateProductRequest extends FormRequest
             'warranty' => 'nullable|string|max:100',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
+            // Image upload validation
+            'images' => 'required|array|min:1',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'primary_image_index' => 'required|integer|min:0',
         ];
     }
 }

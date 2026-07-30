@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, User, AlertCircle, Store, Shirt, Laptop, Home as HomeIcon, Car, CheckCircle } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,13 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear any stale auth state on register page mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-storage');
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

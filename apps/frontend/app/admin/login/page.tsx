@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,17 @@ import { Label } from '@/components/ui/label';
 import { CommerceBridgeLogo } from '@/components/CommerceBridgeLogo';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear any stale auth state on admin login page mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-storage');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -22,7 +27,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
+      await authApi.login({ email, password });
 
       // For admin login, redirect to dashboard regardless of role
       // (Admin users can access dashboard, customers will be redirected by middleware if not authorized)

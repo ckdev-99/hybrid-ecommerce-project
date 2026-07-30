@@ -79,7 +79,12 @@ class ProductController extends Controller
      */
     public function store(CreateProductRequest $request): JsonResponse
     {
-        $product = $this->productService->createProduct($request->validated());
+        $data = $request->validated();
+
+        // Handle file uploads
+        $data['images'] = $request->file('images', []);
+
+        $product = $this->productService->createProduct($data);
 
         return response()->json([
             'success' => true,
@@ -117,7 +122,12 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $product = $this->productService->updateProduct($product, $request->validated());
+        $data = $request->validated();
+
+        // Handle file uploads
+        $data['images'] = $request->file('images', []);
+
+        $product = $this->productService->updateProduct($product, $data);
 
         return response()->json([
             'success' => true,

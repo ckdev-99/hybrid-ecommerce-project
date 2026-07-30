@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, uploadApi, uploadApiPut } from './client';
 import type { LaravelResponse } from './types';
 
 export interface Category {
@@ -142,5 +142,23 @@ export const categoriesApi = {
   reorder: async (categories: Array<{ id: number; sort_order: number }>) => {
     const response = await api.post<LaravelResponse<void>>('/admin/categories/reorder', { categories });
     return response.data;
+  },
+
+  /**
+   * Create a new category with images (multipart/form-data)
+   * POST /api/admin/store/categories
+   */
+  createWithImages: async (formData: FormData) => {
+    const response = await uploadApi('/admin/store/categories', formData);
+    return response.data.data.category;
+  },
+
+  /**
+   * Update a category with images (multipart/form-data)
+   * PUT /api/admin/update/categories/{id}
+   */
+  updateWithImages: async (id: number, formData: FormData) => {
+    const response = await uploadApiPut(`/admin/update/categories/${id}`, formData);
+    return response.data.data.category;
   },
 };

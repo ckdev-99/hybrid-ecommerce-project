@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { productsApi, categoriesApi, Product, ProductFormData } from '@/lib/api';
+import Image from 'next/image';
+import { productsApi, Product, ProductFormData } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,10 +41,12 @@ import {
   Loader2,
   DollarSign,
   Box,
+  ImageOff,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 export default function ProductsPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,11 @@ export default function ProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Image upload state
+  const [productImages, setProductImages] = useState<(File | { url: string; id?: number })[]>([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
 
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -117,6 +124,9 @@ export default function ProductsPage() {
   }, []);
 
   const resetForm = () => {
+    setProductImages([]);
+    setPrimaryImageIndex(0);
+    setDeletedImageIds([]);
     setFormData({
       name: '',
       slug: '',
@@ -158,11 +168,40 @@ export default function ProductsPage() {
       toast.error('SKU is required');
       return;
     }
+    if (productImages.length === 0) {
+      toast.error('At least one product image is required');
+      return;
+    }
 
     setSubmitting(true);
 
     try {
-      await productsApi.create(formData);
+      // Create FormData for multipart upload
+      const formDataToSend = new FormData();
+
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        const value = formData[key as keyof ProductFormData];
+        if (value !== undefined && value !== null && value !== '') {
+          if (typeof value === 'boolean') {
+            formDataToSend.append(key, value ? '1' : '0');
+          } else {
+            formDataToSend.append(key, String(value));
+          }
+        }
+      });
+
+      // Add images
+      productImages.forEach((image, index) => {
+        if (image instanceof File) {
+          formDataToSend.append('images[]', image);
+        }
+      });
+
+      // Add primary image index
+      formDataToSend.append('primary_image_index', String(primaryImageIndex));
+
+      await productsApi.createWithImages(formDataToSend);
       toast.success('Product created successfully');
       setIsCreateDialogOpen(false);
       resetForm();
@@ -198,7 +237,51 @@ export default function ProductsPage() {
     setSubmitting(true);
 
     try {
-      await productsApi.update(selectedProduct.id, formData);
+      // Check if we have new images or deleted images
+      const hasNewImages = productImages.some(img => img instanceof File);
+      const hasDeletedImages = deletedImageIds.length > 0;
+
+      if (hasNewImages || hasDeletedImages) {
+        // Create FormData for multipart upload
+        const formDataToSend = new FormData();
+
+        // Add all form fields
+        Object.keys(formData).forEach(key => {
+          const value = formData[key as keyof ProductFormData];
+          if (value !== undefined && value !== null && value !== '') {
+            if (typeof value === 'boolean') {
+              formDataToSend.append(key, value ? '1' : '0');
+            } else {
+              formDataToSend.append(key, String(value));
+            }
+          }
+        });
+
+        // Add new images (if any)
+        if (hasNewImages) {
+          productImages.forEach((image) => {
+            if (image instanceof File) {
+              formDataToSend.append('images[]', image);
+            }
+          });
+        }
+
+        // Add primary image index
+        formDataToSend.append('primary_image_index', String(primaryImageIndex));
+
+        // Add deleted image IDs
+        if (deletedImageIds.length > 0) {
+          deletedImageIds.forEach(id => {
+            formDataToSend.append('delete_images[]', String(id));
+          });
+        }
+
+        await productsApi.updateWithImages(selectedProduct.id, formDataToSend);
+      } else {
+        // No new images, just update text fields
+        await productsApi.update(selectedProduct.id, formData);
+      }
+
       toast.success('Product updated successfully');
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
@@ -237,6 +320,24 @@ export default function ProductsPage() {
 
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product);
+    setDeletedImageIds([]);
+
+    // Load existing images
+    if (product.images && product.images.length > 0) {
+      const existingImages = product.images.map(img => ({
+        url: img.url,
+        id: img.id
+      }));
+      setProductImages(existingImages);
+
+      // Find primary image index
+      const primaryIndex = product.images.findIndex(img => img.is_primary);
+      setPrimaryImageIndex(primaryIndex >= 0 ? primaryIndex : 0);
+    } else {
+      setProductImages([]);
+      setPrimaryImageIndex(0);
+    }
+
     setFormData({
       name: product.name,
       slug: product.slug,
@@ -266,6 +367,23 @@ export default function ProductsPage() {
   const openDeleteDialog = (product: Product) => {
     setSelectedProduct(product);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Handle image changes with tracking of deleted images
+  const handleProductImagesChange = (newImages: (File | { url: string; id?: number })[]) => {
+    setProductImages(newImages);
+
+    // Track which existing images were removed
+    const currentImageIds = newImages
+      .filter(img => typeof img === 'object' && 'id' in img && img.id)
+      .map(img => (img as { id: number }).id);
+
+    // Get original image IDs from selectedProduct
+    const originalImageIds = selectedProduct?.images?.map(img => img.id) || [];
+
+    // Find IDs that are no longer in the new images
+    const deletedIds = originalImageIds.filter(id => !currentImageIds.includes(id));
+    setDeletedImageIds(deletedIds);
   };
 
   // Filter products based on search
@@ -349,7 +467,7 @@ export default function ProductsPage() {
                         <SelectItem value="">No category</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
+                            {cat.name || 'Unnamed Category'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -359,13 +477,27 @@ export default function ProductsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="create-description">Description</Label>
-                  <Input
+                  <Textarea
                     id="create-description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Product description"
+                    rows={3}
                   />
                 </div>
+
+                {/* Image Upload */}
+                <ImageUpload
+                  images={productImages}
+                  onImagesChange={setProductImages}
+                  multiple={true}
+                  maxImages={5}
+                  primaryIndex={primaryImageIndex}
+                  onPrimaryChange={setPrimaryImageIndex}
+                  disabled={submitting}
+                  label="Product Images"
+                  required={true}
+                />
 
                 {/* Pricing */}
                 <div className="grid grid-cols-3 gap-4">
@@ -624,6 +756,7 @@ export default function ProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">Image</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Category</TableHead>
@@ -636,6 +769,23 @@ export default function ProductsPage() {
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-muted">
+                          {product.primaryImage?.url || product.images?.[0]?.url ? (
+                            <Image
+                              src={product.primaryImage?.url || product.images?.[0]?.url || ''}
+                              alt={product.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                              <Package className="w-6 h-6 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{product.name}</div>
@@ -764,7 +914,7 @@ export default function ProductsPage() {
                       <SelectItem value="">No category</SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id.toString()}>
-                          {cat.name}
+                          {cat.name || 'Unnamed Category'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -774,12 +924,26 @@ export default function ProductsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Description</Label>
-                <Input
+                <Textarea
                   id="edit-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
                 />
               </div>
+
+              {/* Image Upload */}
+              <ImageUpload
+                images={productImages}
+                onImagesChange={handleProductImagesChange}
+                multiple={true}
+                maxImages={5}
+                primaryIndex={primaryImageIndex}
+                onPrimaryChange={setPrimaryImageIndex}
+                disabled={submitting}
+                label="Product Images"
+                required={false}
+              />
 
               {/* Pricing */}
               <div className="grid grid-cols-3 gap-4">

@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, uploadApi, uploadApiPut } from './client';
 import type { LaravelResponse } from './types';
 import type { Category } from './categories';
 
@@ -217,6 +217,24 @@ export const productsApi = {
    */
   updateStock: async (id: number, quantity: number) => {
     const response = await api.put<LaravelResponse<ProductData>>(`/admin/products/${id}/stock`, { quantity });
+    return response.data.data.product;
+  },
+
+  /**
+   * Create a new product with images (multipart/form-data)
+   * POST /api/admin/products
+   */
+  createWithImages: async (formData: FormData) => {
+    const response = await uploadApi('/admin/products', formData);
+    return response.data.data.product;
+  },
+
+  /**
+   * Update a product with images (multipart/form-data)
+   * PUT /api/admin/products/{id}
+   */
+  updateWithImages: async (id: number, formData: FormData) => {
+    const response = await uploadApiPut(`/admin/products/${id}`, formData);
     return response.data.data.product;
   },
 };

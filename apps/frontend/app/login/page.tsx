@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, AlertCircle, Shirt, Laptop, Home as HomeIcon, Car } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Clear any stale auth state on login page mount
+  // This ensures users see a clean login form even if localStorage has old/expired data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-storage');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError('');
@@ -24,8 +32,17 @@ export default function LoginPage() {
     try {
       const response = await authApi.login({ email, password });
 
-      // Customer login - always redirect to home
-      window.location.href = '/';
+      // Check if user has admin roles
+      const isAdmin = response.user.roles?.some(role =>
+        role.slug === 'admin' || role.slug === 'superadmin'
+      );
+
+      // Redirect based on role
+      if (isAdmin) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/';
+      }
     } catch {
       setError('Login failed. Please check your credentials.');
       setLoading(false);
