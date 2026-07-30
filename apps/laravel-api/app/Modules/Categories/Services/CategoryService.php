@@ -110,6 +110,13 @@ class CategoryService
      */
     public function updateCategory(Category $category, array $data): Category
     {
+        \Log::info('CategoryService::updateCategory - Before processing', [
+            'category_id' => $category->id,
+            'has_image_in_data' => isset($data['image']),
+            'image_type' => isset($data['image']) ? gettype($data['image']) : null,
+            'current_category_image' => $category->image,
+        ]);
+
         // Auto-generate slug if name changed and slug not provided
         if (isset($data['name']) && empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -120,8 +127,14 @@ class CategoryService
         $icon = $data['icon'] ?? null;
         unset($data['image'], $data['icon']);
 
+        \Log::info('CategoryService::updateCategory - After extracting image', [
+            'image' => $image ? get_class($image) : null,
+            'icon' => $icon ? get_class($icon) : null,
+        ]);
+
         // Delete old images if new ones are provided
         if ($image && $category->image) {
+            \Log::info('Deleting old image', ['old_image' => $category->image]);
             $this->deleteCategoryImage($category->image);
         }
         if ($icon && $category->icon) {
@@ -130,13 +143,26 @@ class CategoryService
 
         // Store new images
         if ($image) {
-            $data['image'] = $this->handleCategoryImage($image, $category->id);
+            $storedPath = $this->handleCategoryImage($image, $category->id);
+            \Log::info('Stored new image', ['path' => $storedPath]);
+            $data['image'] = $storedPath;
         }
         if ($icon) {
             $data['icon'] = $this->handleCategoryImage($icon, $category->id);
         }
 
+        \Log::info('CategoryService::updateCategory - Before update', [
+            'data_to_update' => array_keys($data),
+            'has_image' => isset($data['image']),
+            'image_value' => $data['image'] ?? 'not set',
+        ]);
+
         $category->update($data);
+
+        \Log::info('CategoryService::updateCategory - After update', [
+            'category_image' => $category->image,
+        ]);
+
         return $category->fresh(['parent', 'children']);
     }
 
@@ -201,12 +227,28 @@ class CategoryService
      */
     protected function handleCategoryImage($image, int $categoryId): ?string
     {
+        \Log::info('handleCategoryImage called', [
+            'image_type' => $image ? get_class($image) : null,
+            'category_id' => $categoryId,
+            'is_valid' => $image instanceof \Illuminate\Http\UploadedFile,
+        ]);
+
         if (!$image) {
+            \Log::warning('handleCategoryImage - no image provided');
             return null;
         }
 
-        $path = $image->store('categories/' . $categoryId, 'public');
-        return $path;
+        try {
+            $path = $image->store('categories/' . $categoryId, 'public');
+            \Log::info('handleCategoryImage - stored successfully', ['path' => $path]);
+            return $path;
+        } catch (\Exception $e) {
+            \Log::error('handleCategoryImage - failed to store', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
     }
 
     /**

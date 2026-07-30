@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { categoriesApi, Category, CategoryFormData } from '@/lib/api';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -42,10 +42,10 @@ import {
   Search,
   Loader2,
   ChevronRight,
+  ImageOff,
 } from 'lucide-react';
 
 export default function CategoriesPage() {
-  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -178,6 +178,7 @@ export default function CategoriesPage() {
   };
 
   const handleEdit = async (e: React.FormEvent) => {
+    console.log('[Category Edit] handleEdit called!');
     e.preventDefault();
     if (!selectedCategory) return;
 
@@ -190,10 +191,19 @@ export default function CategoriesPage() {
     setSubmitting(true);
 
     try {
-      // Check if we have new images to upload
-      const hasNewImages = (categoryImage instanceof File) || (categoryIcon instanceof File);
+      // Debug: Log what we're sending
+      console.log('[Category Edit] categoryImage:', categoryImage);
+      console.log('[Category Edit] categoryIcon:', categoryIcon);
+      console.log('[Category Edit] hasNewImage:', categoryImage instanceof File);
+      console.log('[Category Edit] hasNewIcon:', categoryIcon instanceof File);
 
-      if (hasNewImages) {
+      // Check if we have new images to upload
+      // For categories, we need to check if the image array contains any File objects
+      const hasNewImage = categoryImage instanceof File;
+      const hasNewIcon = categoryIcon instanceof File;
+
+      if (hasNewImage || hasNewIcon) {
+        console.log('[Category Edit] Creating FormData for image upload');
         // Create FormData for multipart upload
         const formDataToSend = new FormData();
 
@@ -210,13 +220,13 @@ export default function CategoriesPage() {
         });
 
         // Add image
-        if (categoryImage instanceof File) {
-          formDataToSend.append('image', categoryImage);
+        if (hasNewImage) {
+          formDataToSend.append('image', categoryImage as File);
         }
 
         // Add icon (optional)
-        if (categoryIcon instanceof File) {
-          formDataToSend.append('icon', categoryIcon);
+        if (hasNewIcon) {
+          formDataToSend.append('icon', categoryIcon as File);
         }
 
         await categoriesApi.updateWithImages(selectedCategory.id, formDataToSend);
@@ -261,11 +271,17 @@ export default function CategoriesPage() {
   };
 
   const openEditDialog = (category: Category) => {
+    console.log('[Category Edit] Opening edit dialog for category:', category.name);
     setSelectedCategory(category);
+
+    // Reset image states first to clear any previous edits
+    setCategoryImage(null);
+    setCategoryIcon(null);
 
     // Load existing images
     if (category.image_url) {
       setCategoryImage({ url: category.image_url });
+      console.log('[Category Edit] Loaded existing image:', category.image_url);
     }
     // Note: icon field might need to be added to Category interface if not present
     // if (category.icon_url) {
@@ -287,6 +303,42 @@ export default function CategoriesPage() {
   const openDeleteDialog = (category: Category) => {
     setSelectedCategory(category);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Handle category image changes - for single image upload, prefer File over existing
+  const handleCategoryImageChange = (newImages: (File | { url: string; id?: number })[]) => {
+    console.log('[Category Edit] Image changed, newImages:', newImages);
+    console.log('[Category Edit] newImages length:', newImages.length);
+
+    if (newImages.length > 0) {
+      // Look for a newly uploaded File (not an existing image object)
+      const fileImage = newImages.find(img => img instanceof File);
+      console.log('[Category Edit] Found fileImage:', fileImage);
+      console.log('[Category Edit] fileImage instanceof File:', fileImage?.constructor.name);
+
+      // Use the new file if available, otherwise keep the existing image
+      if (fileImage) {
+        console.log('[Category Edit] Setting new File as categoryImage');
+        setCategoryImage(fileImage);
+      } else {
+        console.log('[Category Edit] No new File, keeping existing image:', newImages[0]);
+        setCategoryImage(newImages[0]);
+      }
+    } else {
+      console.log('[Category Edit] No images, setting to null');
+      setCategoryImage(null);
+    }
+  };
+
+  // Handle category icon changes - for single image upload, prefer File over existing
+  const handleCategoryIconChange = (newImages: (File | { url: string; id?: number })[]) => {
+    if (newImages.length > 0) {
+      // Prefer File objects (new uploads) over existing image objects
+      const fileImage = newImages.find(img => img instanceof File);
+      setCategoryIcon(fileImage || newImages[0] || null);
+    } else {
+      setCategoryIcon(null);
+    }
   };
 
   // Filter categories based on search
@@ -362,7 +414,7 @@ export default function CategoriesPage() {
                 {/* Image Upload */}
                 <ImageUpload
                   images={categoryImage ? [categoryImage] : []}
-                  onImagesChange={(images) => setCategoryImage(images[0] || null)}
+                  onImagesChange={handleCategoryImageChange}
                   multiple={false}
                   maxImages={1}
                   disabled={submitting}
@@ -535,6 +587,7 @@ export default function CategoriesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead>Parent</TableHead>
@@ -547,6 +600,23 @@ export default function CategoriesPage() {
                 <TableBody>
                   {filteredCategories.map((category) => (
                     <TableRow key={category.id}>
+                      <TableCell>
+                        <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-muted">
+                          {category.image_url ? (
+                            <Image
+                              src={category.image_url}
+                              alt={category.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                              <ImageOff className="w-6 h-6 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           {category.children && category.children.length > 0 && (
@@ -656,7 +726,7 @@ export default function CategoriesPage() {
               {/* Image Upload */}
               <ImageUpload
                 images={categoryImage ? [categoryImage] : []}
-                onImagesChange={(images) => setCategoryImage(images[0] || null)}
+                onImagesChange={handleCategoryImageChange}
                 multiple={false}
                 maxImages={1}
                 disabled={submitting}
@@ -667,7 +737,7 @@ export default function CategoriesPage() {
               {/* Icon Upload */}
               <ImageUpload
                 images={categoryIcon ? [categoryIcon] : []}
-                onImagesChange={(images) => setCategoryIcon(images[0] || null)}
+                onImagesChange={handleCategoryIconChange}
                 multiple={false}
                 maxImages={1}
                 disabled={submitting}
@@ -719,7 +789,7 @@ export default function CategoriesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-featured">Featured</Label>
                   <Select
-                    value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : undefined}
+                    value={formData.is_featured === true ? 'true' : formData.is_featured === false ? 'false' : ''}
                     onValueChange={(value) =>
                       setFormData({ ...formData, is_featured: value === 'true' ? true : value === 'false' ? false : undefined })
                     }
@@ -740,7 +810,7 @@ export default function CategoriesPage() {
               <div className="space-y-2">
                 <Label htmlFor="edit-active">Status</Label>
                 <Select
-                  value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : undefined}
+                  value={formData.is_active === true ? 'true' : formData.is_active === false ? 'false' : ''}
                   onValueChange={(value) =>
                     setFormData({ ...formData, is_active: value === 'true' ? true : value === 'false' ? false : undefined })
                   }

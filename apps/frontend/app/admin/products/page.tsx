@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { productsApi, categoriesApi, Product, ProductFormData } from '@/lib/api';
+import Image from 'next/image';
+import { productsApi, Product, ProductFormData } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,43 +41,12 @@ import {
   Loader2,
   DollarSign,
   Box,
+  ImageOff,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/admin/ImageUpload';
 
-// Zod schema for product validation
-const productSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
-  slug: z.string().optional(),
-  short_description: z.string().optional(),
-  description: z.string().optional(),
-  category_id: z.number().min(1, 'Category is required'),
-  sku: z.string().min(1, 'SKU is required'),
-  barcode: z.string().optional(),
-  price: z.number().min(0, 'Price must be positive'),
-  compare_price: z.number().optional(),
-  cost_price: z.number().optional(),
-  tax_percent: z.number().optional(),
-  stock_qty: z.number().optional(),
-  low_stock_threshold: z.number().optional(),
-  track_stock: z.boolean().optional(),
-  allow_backorders: z.boolean().optional(),
-  is_active: z.boolean().optional(),
-  is_featured: z.boolean().optional(),
-  weight: z.number().optional(),
-  length: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  brand: z.string().optional(),
-  warranty: z.string().optional(),
-  meta_title: z.string().optional(),
-  meta_description: z.string().optional(),
-});
-
-type ProductFormValues = z.infer<typeof productSchema>;
-
 export default function ProductsPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -92,8 +58,9 @@ export default function ProductsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Image upload state
-  const [productImages, setProductImages] = useState<(File | { url: string; id: number })[]>([]);
+  const [productImages, setProductImages] = useState<(File | { url: string; id?: number })[]>([]);
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
 
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -159,6 +126,7 @@ export default function ProductsPage() {
   const resetForm = () => {
     setProductImages([]);
     setPrimaryImageIndex(0);
+    setDeletedImageIds([]);
     setFormData({
       name: '',
       slug: '',
@@ -269,10 +237,11 @@ export default function ProductsPage() {
     setSubmitting(true);
 
     try {
-      // Check if we have new images to upload
+      // Check if we have new images or deleted images
       const hasNewImages = productImages.some(img => img instanceof File);
+      const hasDeletedImages = deletedImageIds.length > 0;
 
-      if (hasNewImages) {
+      if (hasNewImages || hasDeletedImages) {
         // Create FormData for multipart upload
         const formDataToSend = new FormData();
 
@@ -288,17 +257,24 @@ export default function ProductsPage() {
           }
         });
 
-        // Add new images
-        let imageIndex = 0;
-        productImages.forEach((image) => {
-          if (image instanceof File) {
-            formDataToSend.append('images[]', image);
-            imageIndex++;
-          }
-        });
+        // Add new images (if any)
+        if (hasNewImages) {
+          productImages.forEach((image) => {
+            if (image instanceof File) {
+              formDataToSend.append('images[]', image);
+            }
+          });
+        }
 
         // Add primary image index
         formDataToSend.append('primary_image_index', String(primaryImageIndex));
+
+        // Add deleted image IDs
+        if (deletedImageIds.length > 0) {
+          deletedImageIds.forEach(id => {
+            formDataToSend.append('delete_images[]', String(id));
+          });
+        }
 
         await productsApi.updateWithImages(selectedProduct.id, formDataToSend);
       } else {
@@ -344,6 +320,7 @@ export default function ProductsPage() {
 
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product);
+    setDeletedImageIds([]);
 
     // Load existing images
     if (product.images && product.images.length > 0) {
@@ -390,6 +367,23 @@ export default function ProductsPage() {
   const openDeleteDialog = (product: Product) => {
     setSelectedProduct(product);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Handle image changes with tracking of deleted images
+  const handleProductImagesChange = (newImages: (File | { url: string; id?: number })[]) => {
+    setProductImages(newImages);
+
+    // Track which existing images were removed
+    const currentImageIds = newImages
+      .filter(img => typeof img === 'object' && 'id' in img && img.id)
+      .map(img => (img as { id: number }).id);
+
+    // Get original image IDs from selectedProduct
+    const originalImageIds = selectedProduct?.images?.map(img => img.id) || [];
+
+    // Find IDs that are no longer in the new images
+    const deletedIds = originalImageIds.filter(id => !currentImageIds.includes(id));
+    setDeletedImageIds(deletedIds);
   };
 
   // Filter products based on search
@@ -473,7 +467,7 @@ export default function ProductsPage() {
                         <SelectItem value="">No category</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
+                            {cat.name || 'Unnamed Category'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -762,6 +756,7 @@ export default function ProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">Image</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Category</TableHead>
@@ -774,6 +769,23 @@ export default function ProductsPage() {
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-muted">
+                          {product.primaryImage?.url || product.images?.[0]?.url ? (
+                            <Image
+                              src={product.primaryImage?.url || product.images?.[0]?.url || ''}
+                              alt={product.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                              <Package className="w-6 h-6 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{product.name}</div>
@@ -902,7 +914,7 @@ export default function ProductsPage() {
                       <SelectItem value="">No category</SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id.toString()}>
-                          {cat.name}
+                          {cat.name || 'Unnamed Category'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -923,7 +935,7 @@ export default function ProductsPage() {
               {/* Image Upload */}
               <ImageUpload
                 images={productImages}
-                onImagesChange={setProductImages}
+                onImagesChange={handleProductImagesChange}
                 multiple={true}
                 maxImages={5}
                 primaryIndex={primaryImageIndex}

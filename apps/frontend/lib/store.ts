@@ -33,15 +33,19 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => {
         set({ user, token });
         // Also set a simple cookie for proxy to check
+        // Calculate expiration: 24 hours from now
+        const expires = new Date();
+        expires.setHours(expires.getHours() + 24);
+
         Cookies.set('auth-token', token || '', {
-          expires: 7,
+          expires: expires,
           path: '/',
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
         // Store user info for middleware role checks (properly encoded)
         Cookies.set('user-info', encodeURIComponent(JSON.stringify(user)), {
-          expires: 7,
+          expires: expires, // Same 24-hour expiration
           path: '/',
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',

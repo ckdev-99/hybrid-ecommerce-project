@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, AlertCircle, Shirt, Laptop, Home as HomeIcon, Car } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear any stale auth state on login page mount
+  // This ensures users see a clean login form even if localStorage has old/expired data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-storage');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();

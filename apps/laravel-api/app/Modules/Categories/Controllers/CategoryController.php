@@ -139,9 +139,17 @@ class CategoryController extends Controller
     {
         $data = $request->validated();
 
-        // Handle file uploads
+        // Handle file uploads - get raw files from request, not validated data
         $data['image'] = $request->file('image');
         $data['icon'] = $request->file('icon');
+
+        // Debug logging
+        \Log::info('Category update request', [
+            'category_id' => $category->id,
+            'has_image' => $request->hasFile('image'),
+            'image' => $request->file('image') ? get_class($request->file('image')) : null,
+            'data_keys' => array_keys($data),
+        ]);
 
         $category = $this->categoryService->updateCategory($category, $data);
 

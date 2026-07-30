@@ -16,7 +16,7 @@ class ProductImageResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'url' => $this->image_path, // Frontend expects 'url'
+            'url' => $this->url, // Uses getUrlAttribute() accessor for full URL
             'alt' => $this->alt_text, // Frontend expects 'alt'
             'position' => $this->sort_order, // Frontend expects 'position'
             'is_primary' => $this->is_primary,
