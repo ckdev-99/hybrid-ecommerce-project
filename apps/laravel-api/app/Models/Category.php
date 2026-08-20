@@ -60,6 +60,15 @@ class Category extends Model
     }
 
     /**
+     * Child categories with their parent relationship loaded.
+     * Useful for building category trees where each level needs parent info.
+     */
+    public function childrenWithParent()
+    {
+        return $this->hasMany(Category::class, 'parent_id')->orderBy('sort_order');
+    }
+
+    /**
      * Products in this category.
      */
     public function products()

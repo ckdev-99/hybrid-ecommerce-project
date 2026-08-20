@@ -32,8 +32,15 @@ class CategoryResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
 
             // Relationships when loaded
-            'parent' => CategoryResource::make($this->whenLoaded('parent')),
-            'children' => CategoryResource::collection($this->whenLoaded('children')),
+            'parent' => $this->whenLoaded('parent'),
+            'children' => $this->when(
+                $this->resource->relationLoaded('children') || $this->resource->relationLoaded('childrenWithParent'),
+                CategoryResource::collection(
+                    $this->resource->relationLoaded('children')
+                        ? $this->resource->children
+                        : $this->resource->childrenWithParent
+                )
+            ),
             'products_count' => $this->whenCounted('products'),
         ];
     }

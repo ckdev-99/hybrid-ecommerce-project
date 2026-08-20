@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Exception;
 
 class CategoryService
 {
@@ -21,9 +22,12 @@ class CategoryService
         $query = Category::query();
 
         if ($includeChildren) {
-            $query->with(['children' => function ($query) {
+            $query->with(['parent', 'children' => function ($query) {
                 $query->orderBy('sort_order');
             }]);
+        } else {
+            // Always load parent relationship to show parent name
+            $query->with('parent');
         }
 
         return $query->orderBy('sort_order')->get();
@@ -37,7 +41,7 @@ class CategoryService
     public function getParentCategories(): Collection
     {
         return Category::whereNull('parent_id')
-            ->with('children')
+            ->with(['parent', 'children'])
             ->orderBy('sort_order')
             ->get();
     }
@@ -51,6 +55,8 @@ class CategoryService
     {
         return Category::where('is_featured', true)
             ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->with('parent')
             ->orderBy('sort_order')
             ->get();
     }
@@ -74,10 +80,17 @@ class CategoryService
      */
     public function createCategory(array $data): Category
     {
-        // Auto-generate slug if not provided
-        if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
+        // Always generate slug from category name - backend managed only
+        $slug = Str::slug($data['name']);
+
+        // Check if slug already exists
+        $existingCategory = Category::where('slug', $slug)->first();
+        if ($existingCategory) {
+            // Append a unique suffix if duplicate exists
+            $slug = $slug . '-' . time();
         }
+
+        $data['slug'] = $slug;
 
         // Handle image uploads
         $image = $data['image'] ?? null;
@@ -110,16 +123,20 @@ class CategoryService
      */
     public function updateCategory(Category $category, array $data): Category
     {
-        \Log::info('CategoryService::updateCategory - Before processing', [
-            'category_id' => $category->id,
-            'has_image_in_data' => isset($data['image']),
-            'image_type' => isset($data['image']) ? gettype($data['image']) : null,
-            'current_category_image' => $category->image,
-        ]);
+        // Always regenerate slug from category name if name changed - backend managed only
+        if (isset($data['name'])) {
+            $slug = Str::slug($data['name']);
 
-        // Auto-generate slug if name changed and slug not provided
-        if (isset($data['name']) && empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
+            // Check if slug already exists (excluding current category)
+            $existingCategory = Category::where('slug', $slug)
+                ->where('id', '!=', $category->id)
+                ->first();
+            if ($existingCategory) {
+                // Append a unique suffix if duplicate exists
+                $slug = $slug . '-' . time();
+            }
+
+            $data['slug'] = $slug;
         }
 
         // Handle image uploads
@@ -127,14 +144,8 @@ class CategoryService
         $icon = $data['icon'] ?? null;
         unset($data['image'], $data['icon']);
 
-        \Log::info('CategoryService::updateCategory - After extracting image', [
-            'image' => $image ? get_class($image) : null,
-            'icon' => $icon ? get_class($icon) : null,
-        ]);
-
         // Delete old images if new ones are provided
         if ($image && $category->image) {
-            \Log::info('Deleting old image', ['old_image' => $category->image]);
             $this->deleteCategoryImage($category->image);
         }
         if ($icon && $category->icon) {
@@ -144,24 +155,13 @@ class CategoryService
         // Store new images
         if ($image) {
             $storedPath = $this->handleCategoryImage($image, $category->id);
-            \Log::info('Stored new image', ['path' => $storedPath]);
             $data['image'] = $storedPath;
         }
         if ($icon) {
             $data['icon'] = $this->handleCategoryImage($icon, $category->id);
         }
 
-        \Log::info('CategoryService::updateCategory - Before update', [
-            'data_to_update' => array_keys($data),
-            'has_image' => isset($data['image']),
-            'image_value' => $data['image'] ?? 'not set',
-        ]);
-
         $category->update($data);
-
-        \Log::info('CategoryService::updateCategory - After update', [
-            'category_image' => $category->image,
-        ]);
 
         return $category->fresh(['parent', 'children']);
     }
@@ -213,7 +213,9 @@ class CategoryService
     public function getCategoryTree(): SupportCollection
     {
         return Category::whereNull('parent_id')
-            ->with('children.children')
+            ->with(['childrenWithParent' => function ($query) {
+                $query->with('parent')->orderBy('sort_order');
+            }])
             ->orderBy('sort_order')
             ->get();
     }
@@ -227,26 +229,14 @@ class CategoryService
      */
     protected function handleCategoryImage($image, int $categoryId): ?string
     {
-        \Log::info('handleCategoryImage called', [
-            'image_type' => $image ? get_class($image) : null,
-            'category_id' => $categoryId,
-            'is_valid' => $image instanceof \Illuminate\Http\UploadedFile,
-        ]);
-
         if (!$image) {
-            \Log::warning('handleCategoryImage - no image provided');
             return null;
         }
 
         try {
             $path = $image->store('categories/' . $categoryId, 'public');
-            \Log::info('handleCategoryImage - stored successfully', ['path' => $path]);
             return $path;
-        } catch (\Exception $e) {
-            \Log::error('handleCategoryImage - failed to store', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+        } catch (Exception) {
             return null;
         }
     }

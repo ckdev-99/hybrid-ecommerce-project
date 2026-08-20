@@ -343,8 +343,7 @@ export default function CategoriesPage() {
 
   // Filter categories based on search
   const filteredCategories = categories.filter((category) =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.slug?.toLowerCase().includes(searchTerm.toLowerCase())
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -361,7 +360,13 @@ export default function CategoriesPage() {
           </div>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog
+          open={isCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (open) resetForm(); // Reset form when opening
+          }}
+        >
           <DialogTrigger
             render={
               <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
@@ -387,16 +392,6 @@ export default function CategoriesPage() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Electronics"
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="create-slug">Slug</Label>
-                  <Input
-                    id="create-slug"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    placeholder="e.g., electronics"
                   />
                 </div>
 
@@ -587,21 +582,20 @@ export default function CategoriesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Parent</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Sort Order</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-20 text-center">Image</TableHead>
+                    <TableHead className="w-48">Name</TableHead>
+                    <TableHead className="w-40">Parent</TableHead>
+                    <TableHead className="w-24 text-center">Products</TableHead>
+                    <TableHead className="w-28 text-center">Status</TableHead>
+                    <TableHead className="w-24 text-center">Sort Order</TableHead>
+                    <TableHead className="w-32 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCategories.map((category) => (
                     <TableRow key={category.id}>
-                      <TableCell>
-                        <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-muted">
+                      <TableCell className="text-center">
+                        <div className="inline-block w-12 h-12 relative rounded-lg overflow-hidden bg-muted">
                           {category.image_url ? (
                             <Image
                               src={category.image_url}
@@ -630,7 +624,6 @@ export default function CategoriesPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600">{category.slug}</TableCell>
                       <TableCell>
                         {category.parent ? (
                           <span className="text-slate-600">{category.parent.name}</span>
@@ -638,10 +631,10 @@ export default function CategoriesPage() {
                           <span className="text-slate-400">Root</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <span className="text-slate-600">{category.products_count || 0}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             category.is_active
@@ -652,7 +645,7 @@ export default function CategoriesPage() {
                           {category.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-600">{category.sort_order}</TableCell>
+                      <TableCell className="text-center text-slate-600">{category.sort_order}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -699,16 +692,6 @@ export default function CategoriesPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Electronics"
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-slug">Slug</Label>
-                <Input
-                  id="edit-slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g., electronics"
                 />
               </div>
 

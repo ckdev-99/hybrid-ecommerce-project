@@ -4,7 +4,8 @@ import { categoriesApi } from '@/lib/api';
 import type { Category } from '@/lib/api/categories';
 
 export default async function CategoriesPage() {
-  const categories = await categoriesApi.index({ is_active: true }).catch(() => []);
+  // Only fetch parent categories for the main listing
+  const categories = await categoriesApi.parents().catch(() => []);
 
   return (
     <div className="container mx-auto px-4 py-8">
