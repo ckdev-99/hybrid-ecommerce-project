@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ProductGrid } from '@/components/customer/ProductCard';
 import { categoriesApi, productsApi } from '@/lib/api';
-import { Button } from '@/components/ui/button';
 import type { Category } from '@/lib/api/categories';
 
 interface CategoryPageProps {
@@ -31,23 +30,47 @@ function findCategoryBySlug(categories: Category[], slug: string): Category | nu
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
-  // Fetch all categories as tree to find by slug
-  const categoryTree = await categoriesApi.tree().catch(() => []);
-  const category = findCategoryBySlug(categoryTree, params.slug);
+  // Next.js 16: params is a Promise and must be awaited
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
 
-  if (!category || !category.is_active) {
+  // Fetch all categories as tree to find by slug
+  let categoryTree: Category[];
+  try {
+    categoryTree = await categoriesApi.tree();
+  } catch (error) {
+    console.error('[CategoryPage] Failed to fetch category tree:', error);
+    // Return a proper error page instead of silent 404
+    throw new Error('Failed to load categories. Please try again later.');
+  }
+
+  const category = findCategoryBySlug(categoryTree, slug);
+
+  if (!category) {
+    console.log(`[CategoryPage] Category not found: ${slug}`);
+    console.log('[CategoryPage] Available slugs:', categoryTree.flatMap(c => [c.slug, ...(c.children?.map(ch => ch.slug) || [])]));
+    notFound();
+  }
+
+  if (!category.is_active) {
+    console.log(`[CategoryPage] Category is inactive: ${slug}`);
     notFound();
   }
 
   // Fetch products in this category
-  const productsData = await productsApi
-    .getAll({
+  let productsData;
+  try {
+    productsData = await productsApi.getAll({
       category_id: category.id,
       is_active: true,
-      sort_by: searchParams.sort_by || 'created_at',
-      sort_order: searchParams.sort_order || 'desc',
-    })
-    .catch(() => ({ products: [] }));
+      sort_by: resolvedSearchParams.sort_by || 'created_at',
+      sort_order: resolvedSearchParams.sort_order || 'desc',
+    });
+  } catch (error) {
+    console.error('[CategoryPage] Failed to fetch products:', error);
+    // Continue with empty products if fetch fails
+    productsData = { products: [] };
+  }
 
   // Fetch subcategories if any
   const subcategories = category.children?.filter((c: Category) => c.is_active) || [];
@@ -110,9 +133,10 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       </div>
 
       {/* Subcategories */}
-      {subcategories.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">Subcategories</h2>
+      <section className="mb-12">
+        {/* Debug: Show count always */}
+        <h2 className="text-xl font-semibold mb-4">{subcategories.length} Subcategories</h2>
+        {subcategories.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {subcategories.map((subcategory: Category) => (
               <Link
@@ -146,8 +170,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Products */}
       <section>

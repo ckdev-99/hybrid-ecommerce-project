@@ -13,6 +13,7 @@ export interface Category {
   meta_title?: string;
   meta_description?: string;
   image_url?: string;
+  icon_url?: string;
   created_at: string;
   updated_at: string;
   children?: Category[];
@@ -31,6 +32,7 @@ export interface CategoryFormData {
   meta_title?: string;
   meta_description?: string;
   image_url?: string;
+  icon_url?: string;
 }
 
 export interface CategoriesData {
