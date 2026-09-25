@@ -56,7 +56,7 @@ export function ProductsFilter({ categories, currentParams }: ProductsFilterProp
         <Label htmlFor="category">Category</Label>
         <Select
           value={currentParams.category_id || 'all'}
-          onValueChange={(value) => updateFilter('category_id', value === 'all' ? undefined : value)}
+          onValueChange={(value) => updateFilter('category_id', value && value !== 'all' ? value : undefined)}
         >
           <SelectTrigger id="category">
             <SelectValue placeholder="All categories" />
@@ -101,7 +101,7 @@ export function ProductsFilter({ categories, currentParams }: ProductsFilterProp
         <Select
           value={`${currentParams.sort_by || 'created_at'}-${currentParams.sort_order || 'desc'}`}
           onValueChange={(value) => {
-            const [sortBy, sortOrder] = value.split('-');
+            const [sortBy, sortOrder] = (value ?? 'created_at-desc').split('-');
             updateFilter('sort_by', sortBy);
             updateFilter('sort_order', sortOrder);
           }}
@@ -125,7 +125,7 @@ export function ProductsFilter({ categories, currentParams }: ProductsFilterProp
         <Label htmlFor="stock">Availability</Label>
         <Select
           value={currentParams.in_stock || 'all'}
-          onValueChange={(value) => updateFilter('in_stock', value === 'all' ? undefined : value)}
+          onValueChange={(value) => updateFilter('in_stock', value && value !== 'all' ? value : undefined)}
         >
           <SelectTrigger id="stock">
             <SelectValue />

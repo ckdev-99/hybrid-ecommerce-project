@@ -900,7 +900,7 @@ export default function ProductsPage() {
                   <Select
                     value={formData.category_id?.toString() || ''}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, category_id: parseInt(value) || undefined })
+                      setFormData({ ...formData, category_id: parseInt(value ?? '') || undefined })
                     }
                   >
                     <SelectTrigger id="edit-category">
