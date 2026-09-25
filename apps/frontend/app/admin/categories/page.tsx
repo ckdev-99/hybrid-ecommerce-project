@@ -264,7 +264,10 @@ export default function CategoriesPage() {
       fetchCategories();
       fetchParentCategories();
     } catch (error: unknown) {
-      toast.error(error.response?.data?.message || 'Failed to delete category');
+      const message = error instanceof Error && 'response' in error
+        ? ((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to delete category')
+        : 'Failed to delete category';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

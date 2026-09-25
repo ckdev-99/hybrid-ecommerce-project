@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
@@ -77,7 +77,7 @@ api.interceptors.response.use(
 );
 
 // Helper for multipart/form-data uploads
-export const uploadApi = (url: string, data: FormData, config = {}) => {
+export const uploadApi = (url: string, data: FormData, config: AxiosRequestConfig = {}) => {
   return api.post(url, data, {
     ...config,
     headers: {
@@ -88,7 +88,7 @@ export const uploadApi = (url: string, data: FormData, config = {}) => {
 };
 
 // Helper for PUT multipart requests - uses POST with _method spoofing for PHP compatibility
-export const uploadApiPut = (url: string, data: FormData, config = {}) => {
+export const uploadApiPut = (url: string, data: FormData, config: AxiosRequestConfig = {}) => {
   // Add _method field for method spoofing (PHP doesn't handle PUT with file uploads well)
   data.append('_method', 'PUT');
 
