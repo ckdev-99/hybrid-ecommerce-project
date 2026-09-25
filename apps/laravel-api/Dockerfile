@@ -23,10 +23,14 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies (skip dev packages for production)
-RUN composer install --optimize-autoloader --no-dev --no-interaction --no-progress
+# --no-scripts: artisan doesn't exist yet, so post-autoload scripts would fail
+RUN composer install --optimize-autoloader --no-dev --no-interaction --no-progress --no-scripts
 
 # Copy the rest of the application
 COPY . .
+
+# Now that artisan exists, discover packages
+RUN php artisan package:discover --ansi
 
 # Set permissions for Laravel storage and cache
 RUN chown -R www-data:www-data storage bootstrap/cache \
